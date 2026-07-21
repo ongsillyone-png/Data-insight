@@ -25,12 +25,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 // Routes
-// app.use('/', require('./routes/web/index'));
-// app.use('/api', require('./routes/api/index'));
-
-app.get('/', (req, res) => {
-    res.render('pages/index', { title: 'Dynamic Report Builder' });
-});
+app.use('/', require('./routes/web/index'));
+app.use('/api', require('./routes/api/index'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

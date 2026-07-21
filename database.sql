@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS dynamic_report_builder CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE dynamic_report_builder;
+CREATE DATABASE IF NOT EXISTS data_insight CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE data_insight;
 
 -- Table: users
 CREATE TABLE IF NOT EXISTS users (
@@ -96,4 +96,4 @@ CREATE TABLE IF NOT EXISTS favorites (
 -- Insert mock Admin user (Password: password123, you should hash this in real app)
 -- Note: bcrypt hash for 'password123' is approx '$2a$10$...'
 -- I'll put a placeholder here that can be updated via the App
-INSERT IGNORE INTO users (email, password_hash, role) VALUES ('admin@example.com', '$2a$10$7wI1gJ2Nl.E0bVvK0GqI9.3yV1Z6xPzC2Q8A.Dk/z/K8iC1R3L/Oa', 'admin');
+INSERT IGNORE INTO users (email, password_hash, role) VALUES ('admin@example.com', '$2b$10$XVaxbm7x80v7hITl8jYnLea1U8Da9tGlNlNpdGPbA7NEHOho2qy5i', 'admin');

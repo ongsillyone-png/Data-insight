@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- AdminLTE 4 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
+    <style>
+        .editor-container { height: 400px; border: 1px solid #ccc; border-radius: 4px; }
+        .preview-container { min-height: 400px; border: 1px solid #ccc; border-radius: 4px; padding: 15px; background: #fff; }
+        #chart-preview { width: 100%; height: 350px; }
+    </style>
+</head>
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+        <%- include('../../partials/header') %>
+        <%- include('../../partials/sidebar') %>
+
+        <main class="app-main">
+            <div class="app-content-header">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-sm-6"> <h3 class="mb-0">New Dynamic Report</h3> </div>
+                        <div class="col-sm-6 text-end">
+                            <button class="btn btn-success" id="btn-save" disabled><i class="bi bi-save"></i> Save Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="app-content">
+                <div class="container-fluid">
+                    <div class="row">
+                        <!-- Left Column: SQL Editor -->
+                        <div class="col-md-5">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h3 class="card-title">SQL Query</h3>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div id="sql-editor" class="editor-container"></div>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-primary" id="btn-run"><i class="bi bi-play-fill"></i> Run SQL</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Preview -->
+                        <div class="col-md-7">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title">Result Preview</h3>
+                                    <div>
+                                        <select id="chart-type" class="form-select form-select-sm d-inline-block w-auto">
+                                            <option value="table">Table View</option>
+                                            <option value="bar">Bar Chart</option>
+                                            <option value="pie">Pie Chart</option>
+                                            <option value="line">Line Chart</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="card-body bg-light">
+                                    <div id="alert-box" class="alert d-none"></div>
+                                    <div class="preview-container">
+                                        <div id="table-preview" class="table-responsive d-none">
+                                            <table class="table table-bordered table-sm" id="result-table">
+                                                <thead><tr></tr></thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                        <div id="chart-preview" class="d-none"></div>
+                                        <div id="empty-state" class="text-center text-muted mt-5">
+                                            <i class="bi bi-code-slash fs-1"></i>
+                                            <p class="mt-2">Write SQL and click "Run" to preview data.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/js/adminlte.min.js"></script>
+    
+    <!-- Monaco Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    
+    <!-- Custom Logic -->
+    <script src="/js/report-builder.js"></script>
+</body>
+</html>
