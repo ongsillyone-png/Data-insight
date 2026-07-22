@@ -19,7 +19,7 @@ class DashboardController {
 
     static async getBuilder(req, res) {
         try {
-            const reports = await ReportModel.findAll();
+            const reports = await ReportModel.findAll(req.session.user.id, req.session.user.role);
             res.render('pages/dashboards/builder', { 
                 title: 'Dashboard Builder | Dynamic Report Builder',
                 user: req.session.user,
@@ -37,7 +37,7 @@ class DashboardController {
             const dashboard = await DashboardModel.findById(req.params.id);
             if (!dashboard) return res.status(404).send('Not Found');
             
-            const reports = await ReportModel.findAll();
+            const reports = await ReportModel.findAll(req.session.user.id, req.session.user.role);
             res.render('pages/dashboards/builder', { 
                 title: 'Edit Dashboard | Dynamic Report Builder',
                 user: req.session.user,

@@ -7,8 +7,8 @@ class AuditModel {
             FROM query_history q 
             LEFT JOIN users u ON q.user_id = u.id 
             ORDER BY q.created_at DESC 
-            LIMIT ?
-        `, [limit]);
+            LIMIT ${parseInt(limit)}
+        `);
         return rows;
     }
 }
