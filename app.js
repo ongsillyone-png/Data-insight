@@ -24,7 +24,31 @@ app.use(session({
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
+// Setup Wizard Middleware
+app.use((req, res, next) => {
+    // If installed, block access to /install unless it's a static asset
+    const isInstalled = process.env.APP_INSTALLED === 'true';
+    const isInstallRoute = req.path.startsWith('/install');
+    const isApiInstallRoute = req.path.startsWith('/api/install');
+    const isStatic = req.path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg)$/i);
+
+    if (isStatic) return next();
+
+    if (!isInstalled && !isInstallRoute && !isApiInstallRoute) {
+        return res.redirect('/install');
+    }
+    
+    if (isInstalled && (isInstallRoute || isApiInstallRoute)) {
+        return res.redirect('/');
+    }
+
+    next();
+});
+
 // Routes
+app.use('/install', require('./routes/web/install.routes'));
+app.use('/api/install', require('./routes/api/install.routes'));
+
 app.use('/', require('./routes/web/index'));
 app.use('/api', require('./routes/api/index'));
 

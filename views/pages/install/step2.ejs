@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
+</head>
+<body class="bg-body-secondary d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="card shadow" style="width: 500px;">
+        <div class="card-header bg-success text-white text-center">
+            <h4><i class="bi bi-hospital"></i> Setup Wizard (Step 2/3)</h4>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title text-center mb-4">HIS Database Configuration</h5>
+            <p class="text-muted small">Configure the connection to your Hospital Information System (HIS). We only require Read (SELECT) access.</p>
+            
+            <form id="install-form">
+                <div class="mb-3">
+                    <label class="form-label">Database Type</label>
+                    <select id="type" class="form-select">
+                        <option value="mysql">MySQL</option>
+                        <option value="postgres">PostgreSQL</option>
+                        <option value="mssql">SQL Server (MSSQL)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Host</label>
+                    <input type="text" id="host" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Port</label>
+                    <input type="number" id="port" class="form-control" value="3306" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="user" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Database Name</label>
+                    <input type="text" id="database" class="form-control" required>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="/install" class="btn btn-outline-secondary">Back</a>
+                    <button type="submit" class="btn btn-success" id="btn-next">
+                        Test Connection & Next <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('install-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-next');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Testing...';
+            btn.disabled = true;
+
+            const payload = {
+                type: document.getElementById('type').value,
+                host: document.getElementById('host').value,
+                port: document.getElementById('port').value,
+                user: document.getElementById('user').value,
+                password: document.getElementById('password').value,
+                database: document.getElementById('database').value
+            };
+
+            try {
+                const res = await fetch('/api/install/step2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    window.location.href = '/install/step3';
+                } else {
+                    alert('Connection Failed: ' + data.error);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.innerHTML = 'Test Connection & Next <i class="bi bi-arrow-right"></i>';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
