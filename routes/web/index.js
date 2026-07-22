@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const AuthController = require('../../controllers/auth.controller');
 const ReportController = require('../../controllers/report.controller');
-const { isAuthenticated, isGuest } = require('../../middlewares/auth.middleware');
+const DashboardController = require('../../controllers/dashboard.controller');
+const AuditController = require('../../controllers/audit.controller');
+const { isAuthenticated, isGuest, hasRole } = require('../../middlewares/auth.middleware');
 
 // Auth Routes
 router.get('/login', isGuest, AuthController.getLogin);
@@ -19,6 +21,15 @@ router.get('/', isAuthenticated, (req, res) => {
 
 // Reports Web Routes
 router.get('/reports', isAuthenticated, ReportController.getIndex);
-router.get('/reports/new', isAuthenticated, ReportController.getNewReport);
+router.get('/reports/new', isAuthenticated, hasRole(['admin', 'analyst']), ReportController.getNewReport);
+router.get('/reports/:id/export', isAuthenticated, ReportController.exportCSV);
+
+// Dashboards Web Routes
+router.get('/dashboards', isAuthenticated, DashboardController.getIndex);
+router.get('/dashboards/new', isAuthenticated, hasRole(['admin', 'analyst']), DashboardController.getBuilder);
+router.get('/dashboards/:id/edit', isAuthenticated, hasRole(['admin', 'analyst']), DashboardController.getBuilderForEdit);
+
+// Admin Routes
+router.get('/audit', isAuthenticated, hasRole(['admin']), AuditController.getLogs);
 
 module.exports = router;

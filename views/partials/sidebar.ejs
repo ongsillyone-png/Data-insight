@@ -3,9 +3,20 @@
     <div class="sidebar-wrapper">
         <nav class="mt-2">
             <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
-                <li class="nav-item"> <a href="/" class="nav-link"> <i class="nav-icon bi bi-speedometer"></i> <p>Dashboard</p> </a> </li>
-                <li class="nav-item"> <a href="/reports" class="nav-link"> <i class="nav-icon bi bi-file-earmark-bar-graph"></i> <p>Reports</p> </a> </li>
+                <li class="nav-item"> <a href="/" class="nav-link"> <i class="nav-icon bi bi-speedometer"></i> <p>Home</p> </a> </li>
+                
+                <li class="nav-header text-uppercase text-secondary mt-2 ms-3" style="font-size: 0.75rem;">Dashboards</li>
+                <li class="nav-item"> <a href="/dashboards" class="nav-link"> <i class="nav-icon bi bi-grid-fill"></i> <p>All Dashboards</p> </a> </li>
+                <li class="nav-item"> <a href="/dashboards/new" class="nav-link"> <i class="nav-icon bi bi-grid-1x2-fill"></i> <p>Dashboard Builder</p> </a> </li>
+                
+                <li class="nav-header text-uppercase text-secondary mt-2 ms-3" style="font-size: 0.75rem;">Reports</li>
+                <li class="nav-item"> <a href="/reports" class="nav-link"> <i class="nav-icon bi bi-file-earmark-bar-graph"></i> <p>All Reports</p> </a> </li>
                 <li class="nav-item"> <a href="/reports/new" class="nav-link"> <i class="nav-icon bi bi-plus-square"></i> <p>New Report</p> </a> </li>
+                
+                <% if (user && user.role === 'admin') { %>
+                <li class="nav-header text-uppercase text-secondary mt-2 ms-3" style="font-size: 0.75rem;">Administration</li>
+                <li class="nav-item"> <a href="/audit" class="nav-link"> <i class="nav-icon bi bi-shield-lock-fill text-danger"></i> <p>Audit Logs</p> </a> </li>
+                <% } %>
             </ul>
         </nav>
     </div>

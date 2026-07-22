@@ -1,7 +1,8 @@
 const hisPool = require('../config/his-database');
+const pool = require('../config/database'); // System DB for audit log
 
 class SqlExecutionService {
-    static async executePreview(sql, limit = 1000) {
+    static async executePreview(sql, userId, limit = 1000) {
         // Simple trick: wrap user query in a subquery to enforce limit safely
         // Wait, MySQL 8 supports CTE or subquery. Let's just append LIMIT if not exists, 
         // or execute directly. To be safe, let's just execute and if it's too big, it might cause issues,
@@ -18,13 +19,22 @@ class SqlExecutionService {
             finalSql += ` LIMIT ${limit}`;
         }
 
+        let executionTimeMs = 0;
+        let status = 'success';
+        let errorMessage = null;
+
         try {
             const startTime = Date.now();
             const [rows, fields] = await hisPool.query(finalSql);
-            const executionTimeMs = Date.now() - startTime;
+            executionTimeMs = Date.now() - startTime;
 
             // Extract columns
             const columns = fields ? fields.map(f => f.name) : [];
+            // Log Success
+            if (userId) {
+                await pool.execute('INSERT INTO query_history (user_id, executed_sql, execution_time_ms, status) VALUES (?, ?, ?, ?)',
+                    [userId, sql, executionTimeMs, status]);
+            }
             
             return {
                 success: true,
@@ -33,9 +43,17 @@ class SqlExecutionService {
                 executionTimeMs
             };
         } catch (error) {
+            status = 'fail';
+            errorMessage = error.message;
+            // Log Error
+            if (userId) {
+                await pool.execute('INSERT INTO query_history (user_id, executed_sql, execution_time_ms, status, error_message) VALUES (?, ?, ?, ?, ?)',
+                    [userId, sql, executionTimeMs, status, errorMessage]);
+            }
+
             return {
                 success: false,
-                error: error.message
+                error: errorMessage
             };
         }
     }

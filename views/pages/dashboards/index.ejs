@@ -12,20 +12,16 @@
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <div class="app-wrapper">
-        <!-- Header -->
         <%- include('../../partials/header') %>
-
-        <!-- Sidebar -->
         <%- include('../../partials/sidebar') %>
 
-        <!-- Main Content -->
         <main class="app-main">
             <div class="app-content-header">
                 <div class="container-fluid">
                     <div class="row">
-                        <div class="col-sm-6"> <h3 class="mb-0">Reports</h3> </div>
+                        <div class="col-sm-6"> <h3 class="mb-0">Dashboards</h3> </div>
                         <div class="col-sm-6 text-end">
-                            <a href="/reports/new" class="btn btn-primary"><i class="bi bi-plus-circle"></i> New Report</a>
+                            <a href="/dashboards/new" class="btn btn-primary"><i class="bi bi-grid-1x2-fill"></i> New Dashboard</a>
                         </div>
                     </div>
                 </div>
@@ -35,7 +31,7 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-header"><h3 class="card-title">Saved Reports</h3></div>
+                                <div class="card-header"><h3 class="card-title">Saved Dashboards</h3></div>
                                 <div class="card-body table-responsive p-0">
                                     <table class="table table-hover text-nowrap">
                                         <thead>
@@ -48,23 +44,21 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <% if (reports && reports.length > 0) { %>
-                                                <% reports.forEach(r => { %>
+                                            <% if (dashboards && dashboards.length > 0) { %>
+                                                <% dashboards.forEach(d => { %>
                                                     <tr>
-                                                        <td><%= r.id %></td>
-                                                        <td><%= r.name %></td>
-                                                        <td><%= r.creator_email %></td>
-                                                        <td><%= new Date(r.created_at).toLocaleString() %></td>
+                                                        <td><%= d.id %></td>
+                                                        <td><%= d.name %></td>
+                                                        <td><%= d.creator_email %></td>
+                                                        <td><%= new Date(d.created_at).toLocaleString() %></td>
                                                         <td>
-                                                            <a href="/reports/<%= r.id %>/export" class="btn btn-sm btn-success" target="_blank"><i class="bi bi-file-earmark-excel"></i> Export</a>
-                                                            <button class="btn btn-sm btn-info"><i class="bi bi-eye"></i> View</button>
-                                                            <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+                                                            <a href="/dashboards/<%= d.id %>/edit" class="btn btn-sm btn-info"><i class="bi bi-pencil"></i> View / Edit</a>
                                                         </td>
                                                     </tr>
                                                 <% }) %>
                                             <% } else { %>
                                                 <tr>
-                                                    <td colspan="5" class="text-center">No reports found.</td>
+                                                    <td colspan="5" class="text-center">No dashboards found. Create one!</td>
                                                 </tr>
                                             <% } %>
                                         </tbody>
