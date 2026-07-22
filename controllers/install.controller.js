@@ -88,15 +88,19 @@ class InstallController {
 
             const hashedPassword = await bcrypt.hash(password, 10);
             await conn.query(
-                'INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)',
+                'INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), role = VALUES(role)',
                 [email, hashedPassword, 'admin']
             );
             await conn.end();
 
             // 2. Write to .env
+            const newSecret = `super-secret-key-${crypto.randomUUID()}`;
+            // Update in memory so encrypt() uses the new secret to encrypt the passwords
+            process.env.SESSION_SECRET = newSecret;
+
             const envContent = `APP_INSTALLED=true
 PORT=3000
-SESSION_SECRET=super-secret-key-${crypto.randomUUID()}
+SESSION_SECRET=${newSecret}
 
 DB_HOST=${db.host}
 DB_PORT=${db.port}
