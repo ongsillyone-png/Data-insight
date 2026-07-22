@@ -21,6 +21,9 @@ CREATE TABLE IF NOT EXISTS reports (
     chart_config JSON,
     created_by INT,
     is_public BOOLEAN DEFAULT FALSE,
+    share_uuid VARCHAR(36) UNIQUE,
+    share_password_hash VARCHAR(255),
+    is_shareable BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL

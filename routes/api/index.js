@@ -12,6 +12,7 @@ router.use(isAuthenticated);
 router.post('/reports/run', validateSql, hasRole(['admin', 'analyst']), ReportController.runQuery);
 router.post('/reports', validateSql, hasRole(['admin', 'analyst']), ReportController.saveReport);
 router.get('/reports/:id/data', ReportController.getReportData);
+router.post('/reports/:id/link-share', hasRole(['admin', 'analyst']), ReportController.updateLinkShare);
 
 // Dashboard APIs
 router.post('/dashboards', hasRole(['admin', 'analyst']), DashboardController.saveDashboard);

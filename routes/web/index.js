@@ -4,12 +4,18 @@ const AuthController = require('../../controllers/auth.controller');
 const ReportController = require('../../controllers/report.controller');
 const DashboardController = require('../../controllers/dashboard.controller');
 const AuditController = require('../../controllers/audit.controller');
+const SharedController = require('../../controllers/shared.controller');
 const { isAuthenticated, isGuest, hasRole } = require('../../middlewares/auth.middleware');
 
 // Auth Routes
 router.get('/login', isGuest, AuthController.getLogin);
 router.post('/login', isGuest, AuthController.postLogin);
 router.get('/logout', isAuthenticated, AuthController.logout);
+
+// Shared Routes (Public)
+router.get('/shared/report/:uuid', SharedController.getView);
+router.post('/shared/report/:uuid/auth', SharedController.authenticate);
+router.get('/shared/report/:uuid/data', SharedController.getData);
 
 // Protected Routes
 router.get('/', isAuthenticated, (req, res) => {

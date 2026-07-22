@@ -56,6 +56,9 @@
                                                         <td><%= r.creator_email %></td>
                                                         <td><%= new Date(r.created_at).toLocaleString() %></td>
                                                         <td>
+                                                            <% if (r.created_by === user.id || user.role === 'admin') { %>
+                                                                <button class="btn btn-sm btn-warning" onclick="openShareModal(<%= r.id %>, <%= r.is_shareable ? 'true' : 'false' %>, '<%= r.share_uuid || '' %>')"><i class="bi bi-link-45deg"></i> Share</button>
+                                                            <% } %>
                                                             <a href="/reports/<%= r.id %>/export" class="btn btn-sm btn-success" target="_blank"><i class="bi bi-file-earmark-excel"></i> Export</a>
                                                             <button class="btn btn-sm btn-info"><i class="bi bi-eye"></i> View</button>
                                                             <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
@@ -78,8 +81,107 @@
         </main>
     </div>
 
+    <!-- Share Modal -->
+    <div class="modal fade" id="shareModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Share Report via Link</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="share-report-id">
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="enable-share">
+                        <label class="form-check-label" for="enable-share">Enable Password-Protected Link</label>
+                    </div>
+
+                    <div id="share-settings" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Set / Update Password</label>
+                            <input type="password" id="share-password" class="form-control" placeholder="Enter new password (optional if already set)">
+                            <small class="text-muted">Leave blank to keep existing password.</small>
+                        </div>
+                        <div class="mb-3" id="share-link-container" style="display: none;">
+                            <label class="form-label">Shared Link</label>
+                            <div class="input-group">
+                                <input type="text" id="share-link-url" class="form-control" readonly>
+                                <button class="btn btn-outline-secondary" type="button" onclick="copyLink()"><i class="bi bi-clipboard"></i> Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveShareSettings()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/js/adminlte.min.js"></script>
+    <script>
+        const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+        const enableShareToggle = document.getElementById('enable-share');
+        const shareSettings = document.getElementById('share-settings');
+        
+        enableShareToggle.addEventListener('change', (e) => {
+            shareSettings.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        function openShareModal(id, isShareable, uuid) {
+            document.getElementById('share-report-id').value = id;
+            enableShareToggle.checked = isShareable;
+            shareSettings.style.display = isShareable ? 'block' : 'none';
+            document.getElementById('share-password').value = '';
+            
+            const linkContainer = document.getElementById('share-link-container');
+            const linkUrl = document.getElementById('share-link-url');
+            
+            if (isShareable && uuid) {
+                linkContainer.style.display = 'block';
+                linkUrl.value = window.location.origin + '/shared/report/' + uuid;
+            } else {
+                linkContainer.style.display = 'none';
+                linkUrl.value = '';
+            }
+            
+            shareModal.show();
+        }
+
+        async function saveShareSettings() {
+            const id = document.getElementById('share-report-id').value;
+            const isShareable = enableShareToggle.checked;
+            const password = document.getElementById('share-password').value;
+            
+            try {
+                const res = await fetch(`/api/reports/${id}/link-share`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_shareable: isShareable, password })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('Sharing settings updated!');
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to update settings');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        function copyLink() {
+            const url = document.getElementById('share-link-url');
+            url.select();
+            document.execCommand('copy');
+            alert('Link copied to clipboard!');
+        }
+    </script>
 </body>
 </html>
