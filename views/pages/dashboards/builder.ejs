@@ -15,7 +15,7 @@
     <style>
         .grid-stack { background: #f8f9fa; border: 2px dashed #dee2e6; min-height: 500px; border-radius: 8px; padding: 10px; }
         .grid-stack-item-content { background: white; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 4px; padding: 10px; display: flex; flex-direction: column;}
-        .report-draggable { cursor: grab; background: #fff; border: 1px solid #ced4da; padding: 10px; margin-bottom: 8px; border-radius: 4px; transition: all 0.2s;}
+        .report-draggable { cursor: pointer; background: #fff; border: 1px solid #ced4da; padding: 10px; margin-bottom: 8px; border-radius: 4px; transition: all 0.2s;}
         .report-draggable:hover { background: #e9ecef; border-color: #adb5bd; }
         .widget-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 5px; }
         .widget-title { font-weight: bold; margin: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
@@ -46,6 +46,39 @@
             
             <div class="app-content">
                 <div class="container-fluid">
+
+                    <!-- ── Global Dashboard Filter Bar (Identical to Report View) ── -->
+                    <div id="filter-bar-card" class="card shadow-sm mb-3 border-primary border-start border-4">
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex align-items-center gap-2 flex-wrap" id="dash-filter-bar">
+                                <span class="fw-bold text-primary me-2" style="font-size:13px;"><i class="bi bi-funnel-fill me-1"></i>ตัวกรองรายงาน:</span>
+                                
+                                <div class="d-flex align-items-center gap-1">
+                                    <label class="form-label mb-0 small text-secondary fw-bold" style="font-size:12px;">วันที่เริ่มต้น:</label>
+                                    <input type="date" class="form-control form-control-sm dash-filter-input" id="dash-start-date" style="width:145px;">
+                                </div>
+
+                                <div class="d-flex align-items-center gap-1">
+                                    <label class="form-label mb-0 small text-secondary fw-bold" style="font-size:12px;">ถึงวันที่:</label>
+                                    <input type="date" class="form-control form-control-sm dash-filter-input" id="dash-end-date" style="width:145px;">
+                                </div>
+
+                                <div class="d-flex align-items-center gap-1">
+                                    <label class="form-label mb-0 small text-secondary fw-bold" style="font-size:12px;">เลือกหลายตำแหน่ง:</label>
+                                    <select class="form-select form-select-sm dash-filter-input" id="dash-position-id" multiple size="2" style="width:160px;" title="กด Ctrl หรือ Shift ค้างไว้เพื่อเลือกหลายรายการ">
+                                        <option value="3">3</option>
+                                        <option value="12">12</option>
+                                        <option value="30">30</option>
+                                    </select>
+                                </div>
+
+                                <button class="btn btn-sm btn-primary ms-auto" id="btn-apply-dash-filters">
+                                    <i class="bi bi-search me-1"></i>ค้นหาข้อมูล
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <!-- Left Column: Reports List -->
                         <div class="col-md-3">
@@ -89,7 +122,7 @@
 
     <!-- Data Injection -->
     <script>
-        window.DASHBOARD_DATA = <%- dashboard ? dashboard.layout_config : '[]' %>;
+        window.DASHBOARD_DATA = <%- JSON.stringify(dashboard && dashboard.layout_config ? (typeof dashboard.layout_config === 'string' ? JSON.parse(dashboard.layout_config) : dashboard.layout_config) : []) %>;
         window.DASHBOARD_ID = <%= dashboard ? dashboard.id : 'null' %>;
     </script>
 

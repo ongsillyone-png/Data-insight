@@ -13,18 +13,20 @@ class DashboardModel {
 
     static async create(data) {
         const { name, layout_config, created_by } = data;
+        const configStr = typeof layout_config === 'string' ? layout_config : JSON.stringify(layout_config || []);
         const [result] = await pool.execute(
             'INSERT INTO dashboards (name, layout_config, created_by) VALUES (?, ?, ?)',
-            [name, JSON.stringify(layout_config || []), created_by]
+            [name, configStr, created_by]
         );
         return result.insertId;
     }
 
     static async update(id, data) {
         const { name, layout_config } = data;
+        const configStr = typeof layout_config === 'string' ? layout_config : JSON.stringify(layout_config || []);
         await pool.execute(
             'UPDATE dashboards SET name=?, layout_config=? WHERE id=?',
-            [name, JSON.stringify(layout_config || []), id]
+            [name, configStr, id]
         );
     }
 

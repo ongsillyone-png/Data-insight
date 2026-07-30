@@ -54,14 +54,17 @@
                                                         <td><%= r.id %></td>
                                                         <td><%= r.name %></td>
                                                         <td><%= r.creator_email %></td>
-                                                        <td><%= new Date(r.created_at).toLocaleString() %></td>
+                                                        <td><%= new Date(r.created_at).toLocaleString('th-TH') %></td>
                                                         <td>
                                                             <% if (r.created_by === user.id || user.role === 'admin') { %>
                                                                 <button class="btn btn-sm btn-warning" onclick="openShareModal(<%= r.id %>, <%= r.is_shareable ? 'true' : 'false' %>, '<%= r.share_uuid || '' %>')"><i class="bi bi-link-45deg"></i> Share</button>
                                                             <% } %>
                                                             <a href="/reports/<%= r.id %>/export" class="btn btn-sm btn-success" target="_blank"><i class="bi bi-file-earmark-excel"></i> Export</a>
-                                                            <button class="btn btn-sm btn-info"><i class="bi bi-eye"></i> View</button>
-                                                            <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+                                                            <a href="/reports/<%= r.id %>/view" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> View</a>
+                                                            <% if (r.created_by === user.id || user.role === 'admin') { %>
+                                                                <a href="/reports/<%= r.id %>/view?openSql=true" class="btn btn-sm btn-primary"><i class="bi bi-code-slash"></i> Edit SQL</a>
+                                                                <button class="btn btn-sm btn-danger" onclick="deleteReport(<%= r.id %>, '<%= r.name %>')"><i class="bi bi-trash"></i></button>
+                                                            <% } %>
                                                         </td>
                                                     </tr>
                                                 <% }) %>
@@ -184,6 +187,22 @@
             url.select();
             document.execCommand('copy');
             alert('Link copied to clipboard!');
+        }
+
+        async function deleteReport(id, name) {
+            if (!confirm(`ยืนยันการลบ Report "${name}" ใช่หรือไม่?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+            try {
+                const res = await fetch(`/api/reports/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('ลบ Report เรียบร้อยแล้ว');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to delete'));
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
     </script>
 </body>

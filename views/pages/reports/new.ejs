@@ -1,107 +1,239 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- AdminLTE 4 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
     <style>
-        .editor-container { height: 400px; border: 1px solid #ccc; border-radius: 4px; }
-        .preview-container { min-height: 400px; border: 1px solid #ccc; border-radius: 4px; padding: 15px; background: #fff; }
-        #chart-preview { width: 100%; height: 350px; }
+        #sql-editor { height: 280px; border: 1px solid #dee2e6; border-radius: 4px; }
+        #chart-preview { width: 100%; height: 320px; }
+        #table-preview { max-height: 320px; overflow-y: auto; }
+        #table-preview thead th { position: sticky; top: 0; background: #343a40; color: #fff; z-index: 1; }
+        .zone-card { border: 2px dashed #ced4da; border-radius: 8px; background: #fafbfc; transition: border-color .2s; }
+        .zone-card:hover { border-color: #0d6efd; }
+        .zone-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6c757d; }
+        .agg-badge { font-size: 12px; }
+        #visual-config-panel { display: none; }
+        .col-chip { display: inline-block; background: #e8f0fe; color: #1a56db; border-radius: 12px;
+                    padding: 2px 10px; font-size: 12px; margin: 2px; cursor: pointer; border: 1px solid #c3d4fb; }
+        .col-chip:hover { background: #d0e2ff; }
+        .col-chip.type-num  { background: #fff3cd; color: #856404; border-color: #ffe69c; }
+        .col-chip.type-date { background: #d1e7dd; color: #0a3622; border-color: #a3cfbb; }
     </style>
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
-    <div class="app-wrapper">
-        <%- include('../../partials/header') %>
-        <%- include('../../partials/sidebar') %>
+<div class="app-wrapper">
+    <%- include('../../partials/header') %>
+    <%- include('../../partials/sidebar') %>
 
-        <main class="app-main">
-            <div class="app-content-header">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-sm-6"> <h3 class="mb-0">New Dynamic Report</h3> </div>
-                        <div class="col-sm-6 text-end">
-                            <button class="btn btn-success" id="btn-save" disabled><i class="bi bi-save"></i> Save Report</button>
-                        </div>
+    <main class="app-main">
+        <div class="app-content-header">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-sm-6">
+                        <h3 class="mb-0"><i class="bi bi-plus-circle me-2 text-primary"></i>New Report</h3>
+                    </div>
+                    <div class="col-sm-6 text-end">
+                        <button class="btn btn-success" id="btn-save" disabled>
+                            <i class="bi bi-save"></i> Save Report
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <div class="app-content">
-                <div class="container-fluid">
-                    <div class="row">
-                        <!-- Left Column: SQL Editor -->
-                        <div class="col-md-5">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h3 class="card-title">SQL Query</h3>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div id="sql-editor" class="editor-container"></div>
-                                </div>
-                                <div class="card-footer">
-                                    <button class="btn btn-primary" id="btn-run"><i class="bi bi-play-fill"></i> Run SQL</button>
+        </div>
+
+        <div class="app-content">
+            <div class="container-fluid">
+                <div class="row g-3">
+
+                    <!-- ── LEFT: SQL Editor ── -->
+                    <div class="col-lg-5">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                <h5 class="mb-0"><i class="bi bi-code-slash me-2"></i>SQL Query</h5>
+                                <small class="text-muted">คลิกปุ่มเพื่อแทรกตัวแปรเงื่อนไข</small>
+                            </div>
+                            <!-- ── Quick Variable Toolbar ── -->
+                            <div class="card-body p-2 border-bottom bg-light">
+                                <div class="d-flex align-items-center gap-1 flex-wrap" id="var-toolbar">
+                                    <span class="small fw-bold text-secondary me-1" style="font-size: 11px;">แทรกตัวแปร:</span>
+                                    <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 btn-insert-var" data-code="v.vstdate BETWEEN {{start_date}} AND {{end_date}}" style="font-size: 11px;" title="แทรกช่วงวันที่">
+                                        <i class="bi bi-calendar-range me-1"></i>ช่วงวันที่
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 btn-insert-var" data-code="v.vstdate = {{date}}" style="font-size: 11px;" title="แทรกวันที่">
+                                        <i class="bi bi-calendar-event me-1"></i>วันที่
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 btn-insert-var" data-code="d.code = {{doctor_code}}" style="font-size: 11px;" title="แทรกรหัสแพทย์">
+                                        <i class="bi bi-person-badge me-1"></i>แพทย์
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 btn-insert-var" data-code="name LIKE {{search_text}}" style="font-size: 11px;" title="แทรกช่องค้นหา">
+                                        <i class="bi bi-search me-1"></i>ค้นหา
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-primary py-0 px-2 ms-auto" id="btn-open-var-wizard" style="font-size: 11px;">
+                                        <i class="bi bi-magic me-1"></i>สร้างตัวแปร...
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Right Column: Preview -->
-                        <div class="col-md-7">
-                            <div class="card mb-4">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h3 class="card-title">Result Preview</h3>
-                                    <div>
-                                        <select id="chart-type" class="form-select form-select-sm d-inline-block w-auto">
-                                            <option value="table">Table View</option>
-                                            <option value="bar">Bar Chart</option>
-                                            <option value="pie">Pie Chart</option>
-                                            <option value="line">Line Chart</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="card-body bg-light">
-                                    <div id="alert-box" class="alert d-none"></div>
-                                    <div class="preview-container">
-                                        <div id="table-preview" class="table-responsive d-none">
-                                            <table class="table table-bordered table-sm" id="result-table">
-                                                <thead><tr></tr></thead>
-                                                <tbody></tbody>
-                                            </table>
-                                        </div>
-                                        <div id="chart-preview" class="d-none"></div>
-                                        <div id="empty-state" class="text-center text-muted mt-5">
-                                            <i class="bi bi-code-slash fs-1"></i>
-                                            <p class="mt-2">Write SQL and click "Run" to preview data.</p>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="card-body p-2">
+                                <div id="sql-editor"></div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center gap-2">
+                                <button class="btn btn-primary" id="btn-run">
+                                    <i class="bi bi-play-fill"></i> Run SQL
+                                </button>
+                                <span id="run-stats" class="text-muted small"></span>
                             </div>
                         </div>
                     </div>
 
+                    <!-- ── RIGHT: Result + Visual Config ── -->
+                    <div class="col-lg-7">
+
+                        <!-- Alert box -->
+                        <div id="alert-box" class="alert d-none mb-2"></div>
+
+                        <!-- Visual Config Panel (appears after run) -->
+                        <div id="visual-config-panel" class="card shadow-sm mb-3">
+                            <div class="card-header bg-primary bg-gradient text-white py-2">
+                                <h6 class="mb-0"><i class="bi bi-sliders me-2"></i>ตั้งค่ากราฟ — เลือกแกนและการรวมข้อมูล</h6>
+                            </div>
+                            <div class="card-body pb-2">
+                                <!-- Column chips -->
+                                <div class="mb-2">
+                                    <span class="zone-label">คอลัมน์ที่ได้:</span>
+                                    <div id="col-chips" class="mt-1"></div>
+                                </div>
+                                <hr class="my-2">
+                                <div class="row g-2">
+                                    <!-- X Axis -->
+                                    <div class="col-md-4">
+                                        <div class="zone-card p-2">
+                                            <div class="zone-label mb-1"><i class="bi bi-arrow-right text-primary"></i> แกน X (กลุ่ม/หมวด)</div>
+                                            <select class="form-select form-select-sm" id="sel-x">
+                                                <option value="">— ไม่เลือก —</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <!-- Y Axis -->
+                                    <div class="col-md-5">
+                                        <div class="zone-card p-2">
+                                            <div class="zone-label mb-1"><i class="bi bi-arrow-up text-success"></i> แกน Y (ค่า/การรวม)</div>
+                                            <div class="d-flex gap-1">
+                                                <select class="form-select form-select-sm" id="sel-y-agg" style="width:100px; flex-shrink:0;">
+                                                    <option value="NONE">ดิบ</option>
+                                                    <option value="COUNT" selected>COUNT</option>
+                                                    <option value="COUNT_DISTINCT">COUNT DISTINCT</option>
+                                                    <option value="SUM">SUM</option>
+                                                    <option value="AVG">AVG</option>
+                                                    <option value="MAX">MAX</option>
+                                                    <option value="MIN">MIN</option>
+                                                </select>
+                                                <select class="form-select form-select-sm" id="sel-y">
+                                                    <option value="">— ไม่เลือก —</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Chart Type -->
+                                    <div class="col-md-3">
+                                        <div class="zone-card p-2">
+                                            <div class="zone-label mb-1"><i class="bi bi-bar-chart text-warning"></i> ประเภทกราฟ</div>
+                                            <select class="form-select form-select-sm" id="chart-type">
+                                                <option value="bar">Bar Chart (แท่งแนวตั้ง)</option>
+                                                <option value="hbar">Horizontal Bar (แท่งแนวนอน)</option>
+                                                <option value="line">Line Chart (กราฟเส้น)</option>
+                                                <option value="pie">Pie Chart (กราฟวงกลม)</option>
+                                                <option value="table">Table View (ตารางข้อมูล)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Card -->
+                        <div class="card shadow-sm">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-eye me-2"></i>ผลลัพธ์ Preview</h5>
+                                <small class="text-muted" id="preview-label">รัน SQL เพื่อดูข้อมูล</small>
+                            </div>
+                            <div class="card-body bg-light">
+                                <!-- Empty state -->
+                                <div id="empty-state" class="text-center text-muted py-5">
+                                    <i class="bi bi-code-slash fs-1 d-block mb-2 text-primary opacity-50"></i>
+                                    <p>เขียน SQL แล้วกด <strong>Run SQL</strong> เพื่อดูข้อมูล</p>
+                                </div>
+                                <!-- Loading -->
+                                <div id="loading-state" class="text-center py-5 d-none">
+                                    <div class="spinner-border text-primary"></div>
+                                    <p class="mt-2 text-muted">กำลังประมวลผล...</p>
+                                </div>
+                                <!-- Chart -->
+                                <div id="chart-container" class="d-none">
+                                    <div id="chart-preview"></div>
+                                </div>
+                                <!-- Table -->
+                                <div id="table-preview" class="table-responsive d-none">
+                                    <table class="table table-bordered table-hover table-sm mb-0" id="result-table">
+                                        <thead><tr id="result-thead"></tr></thead>
+                                        <tbody id="result-tbody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
-        </main>
-        
-        <!-- Footer -->
-        <%- include('../../partials/footer') %>
+        </div>
+    </main>
+
+    <%- include('../../partials/footer') %>
+</div>
+
+<!-- Quick Variable Wizard Modal -->
+<div class="modal fade" id="varWizardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content shadow">
+            <div class="modal-header bg-primary text-white py-2">
+                <h6 class="modal-title mb-0"><i class="bi bi-magic me-2"></i>เครื่องมือช่วยสร้างตัวแปร (Variable Wizard)</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">1. เลือกประเภทตัวแปร:</label>
+                    <select class="form-select form-select-sm" id="wiz-type">
+                        <option value="start_date">ช่วงวันที่เริ่มต้น ({{start_date}})</option>
+                        <option value="end_date">ช่วงวันที่สิ้นสุด ({{end_date}})</option>
+                        <option value="date">วันที่เดี่ยว ({{date}})</option>
+                        <option value="select">ตัวเลือกเดี่ยว ({{select_var:select}})</option>
+                        <option value="in">ตัวเลือกหลายรายการ (IN ({{multi_var:in}}))</option>
+                        <option value="text">ช่องค้นหาข้อความ ({{text_var}})</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">2. ตั้งชื่อตัวแปร:</label>
+                    <input type="text" class="form-control form-control-sm" id="wiz-name" value="start_date" placeholder="เช่น start_date, doctor_code">
+                </div>
+                <div class="alert alert-info py-2 small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>ตัวแปรนี้จะสร้างเป็นช่องอินพุตบนรายงาน ให้ผู้ใช้งานเลือกก่อนดูข้อมูลได้ทันที
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btn-wiz-insert"><i class="bi bi-plus-circle me-1"></i>แทรกใน SQL</button>
+            </div>
+        </div>
     </div>
-    
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/js/adminlte.min.js"></script>
-    
-    <!-- Monaco Editor -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
-    <!-- ECharts -->
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-    
-    <!-- Custom Logic -->
-    <script src="/js/report-builder.js"></script>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<script src="/js/report-builder.js"></script>
 </body>
 </html>

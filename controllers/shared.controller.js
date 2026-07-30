@@ -1,5 +1,6 @@
 const ReportModel = require('../models/report.model');
 const SqlExecutionService = require('../services/sql-execution.service');
+const SqlParamService = require('../services/sql-param.service');
 const bcrypt = require('bcryptjs');
 
 class SharedController {
@@ -70,6 +71,13 @@ class SharedController {
     static async getData(req, res) {
         try {
             const { uuid } = req.params;
+            let userParams = {};
+            if (req.query && req.query.params) {
+                try { userParams = typeof req.query.params === 'string' ? JSON.parse(req.query.params) : req.query.params; } catch (e) {}
+            } else if (req.body && req.body.params) {
+                userParams = req.body.params;
+            }
+
             const unlocked = req.session.unlocked_reports || [];
             if (!unlocked.includes(uuid)) {
                 return res.status(403).json({ error: 'Unauthorized. Password required.' });
@@ -80,26 +88,78 @@ class SharedController {
                 return res.status(404).json({ error: 'Report not found' });
             }
 
-            // Pass null for userId so it doesn't log in query_history, or log it as 'shared_viewer'
-            // For now let's just pass null. The service checks `if (userId)` before logging.
-            const result = await SqlExecutionService.executePreview(report.sql_query, null);
+            const processedSql = SqlParamService.processSql(report.sql_query, userParams);
+            const result = await SqlExecutionService.executePreview(processedSql, null);
             
             if (!result.success) {
                 return res.status(400).json({ error: result.error });
             }
+
+            const detectedParams = SqlParamService.parseParameters(report.sql_query);
 
             res.json({
                 report_id: report.id,
                 name: report.name,
                 chart_type: report.chart_type,
                 chart_config: report.chart_config,
+                visual_config: report.visual_config,
                 columns: result.columns,
-                rows: result.rows
+                rows: result.rows,
+                detectedParams
             });
 
         } catch (error) {
-            console.error('Shared get data error:', error);
-            res.status(500).json({ error: 'Failed to fetch data' });
+            console.error('Shared getData error:', error);
+            res.status(500).json({ error: 'Failed to fetch shared report data' });
+        }
+    }
+
+    static async exportCSV(req, res) {
+        try {
+            const { uuid } = req.params;
+            const report = await ReportModel.findByUuid(uuid);
+            if (!report || !report.is_shareable) {
+                return res.status(404).send('Report not found');
+            }
+
+            if (report.share_password_hash) {
+                const unlocked = req.session.unlocked_reports || [];
+                if (!unlocked.includes(uuid)) {
+                    return res.status(403).send('Unauthorized. Password required.');
+                }
+            }
+
+            let userParams = {};
+            if (req.query && req.query.params) {
+                try { userParams = JSON.parse(req.query.params); } catch (e) {}
+            }
+
+            const processedSql = SqlParamService.processSql(report.sql_query, userParams);
+            const result = await SqlExecutionService.executePreview(processedSql, null);
+            if (!result.success) {
+                return res.status(400).send('Query error: ' + result.error);
+            }
+
+            const { columns, rows } = result;
+            
+            // UTF-8 BOM for Thai Excel compatibility
+            let csv = '\uFEFF';
+            csv += columns.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',') + '\r\n';
+            rows.forEach(row => {
+                csv += columns.map(c => {
+                    const val = row[c] ?? '';
+                    return `"${String(val).replace(/"/g, '""')}"`;
+                }).join(',') + '\r\n';
+            });
+
+            const filename = encodeURIComponent(report.name || 'report') + '_raw_data.csv';
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${filename}`);
+            res.send(csv);
+
+        } catch (error) {
+            console.error('Shared export error:', error);
+            res.status(500).send('Export failed');
         }
     }
 }

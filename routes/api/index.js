@@ -11,11 +11,14 @@ router.use(isAuthenticated);
 // Report APIs
 router.post('/reports/run', validateSql, hasRole(['admin', 'analyst']), ReportController.runQuery);
 router.post('/reports', validateSql, hasRole(['admin', 'analyst']), ReportController.saveReport);
+router.put('/reports/:id', validateSql, hasRole(['admin', 'analyst']), ReportController.updateReport);
+router.delete('/reports/:id', hasRole(['admin', 'analyst']), ReportController.deleteReport);
 router.get('/reports/:id/data', ReportController.getReportData);
 router.post('/reports/:id/link-share', hasRole(['admin', 'analyst']), ReportController.updateLinkShare);
 
 // Dashboard APIs
 router.post('/dashboards', hasRole(['admin', 'analyst']), DashboardController.saveDashboard);
 router.put('/dashboards/:id', hasRole(['admin', 'analyst']), DashboardController.updateDashboard);
+router.delete('/dashboards/:id', hasRole(['admin', 'analyst']), DashboardController.deleteDashboard);
 
 module.exports = router;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,24 +7,82 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
+    <style>
+        .chart-type-btn { border-radius: 20px !important; padding: 4px 14px; font-size: 13px; }
+        .chart-type-btn.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+        .table-scroll { max-height: 480px; overflow-y: auto; border-radius: 6px; }
+        .table-scroll thead th { position: sticky; top: 0; background: #343a40; color: #fff; z-index: 2; font-weight: 500; }
+    </style>
 </head>
 <body class="bg-body-tertiary">
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-3 mb-5">
         <div class="row justify-content-center">
             <div class="col-md-10">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0"><i class="bi bi-graph-up-arrow"></i> <%= report.name %></h3>
-                        <span class="badge bg-light text-dark">Confidential</span>
+                        <h4 class="card-title mb-0"><i class="bi bi-graph-up-arrow me-2"></i> <%= report.name %></h4>
+                        <div class="d-flex align-items-center gap-2">
+                            <a id="btn-export-shared" href="/shared/report/<%= report.share_uuid %>/export" class="btn btn-sm btn-success shadow-sm" target="_blank" title="ส่งออกข้อมูลดิบเป็นไฟล์ CSV/Excel">
+                                <i class="bi bi-file-earmark-excel me-1"></i>ส่งออก Excel (ข้อมูลดิบ)
+                            </a>
+                            <span class="badge bg-light text-dark"><i class="bi bi-share me-1"></i>Shared Report</span>
+                        </div>
                     </div>
                     <div class="card-body">
                         <% if (report.description) { %>
-                            <p class="text-muted mb-4"><%= report.description %></p>
+                            <p class="text-muted mb-3"><%= report.description %></p>
                         <% } %>
-                        <div id="chart-container" style="width: 100%; height: 500px;" class="mb-4">
-                            <div class="d-flex justify-content-center align-items-center h-100">
-                                <div class="spinner-border text-primary" role="status"></div>
+
+                        <!-- ── Dynamic Filter Bar ── -->
+                        <div id="filter-bar-card" class="card shadow-sm mb-3 border-primary border-start border-4 d-none">
+                            <div class="card-body py-2 px-3">
+                                <div class="d-flex align-items-center gap-2 flex-wrap" id="filter-bar-form">
+                                    <span class="fw-bold text-primary me-2" style="font-size:13px;"><i class="bi bi-funnel-fill me-1"></i>ตัวกรองรายงาน:</span>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap" id="filter-controls-container"></div>
+                                    <button class="btn btn-sm btn-primary ms-auto" id="btn-apply-filters">
+                                        <i class="bi bi-search me-1"></i>ค้นหาข้อมูล
+                                    </button>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- ── Chart type switcher bar ── -->
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-body py-2 d-flex align-items-center gap-3 flex-wrap">
+                                <span class="text-muted" style="font-size:13px;font-weight:600;">มุมมอง:</span>
+                                <div class="d-flex gap-2" id="chart-type-switcher">
+                                    <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="bar"><i class="bi bi-bar-chart-fill"></i> Bar</button>
+                                    <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="hbar"><i class="bi bi-bar-chart-steps"></i> H-Bar</button>
+                                    <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="line"><i class="bi bi-graph-up"></i> Line</button>
+                                    <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="pie"><i class="bi bi-pie-chart-fill"></i> Pie</button>
+                                    <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="table"><i class="bi bi-table"></i> Table</button>
+                                </div>
+                                <div class="ms-auto d-flex gap-3 flex-wrap" id="stats-bar" style="font-size:13px;color:#666;">
+                                    <span><i class="bi bi-grid-3x3-gap text-primary"></i> คอลัมน์: <strong id="stat-cols">-</strong></span>
+                                    <span><i class="bi bi-list-ul text-primary"></i> แถว: <strong id="stat-rows">-</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Data Display Area ── -->
+                        <div id="loading-state" class="text-center py-5">
+                            <div class="spinner-border text-primary"></div>
+                            <p class="mt-2 text-muted">กำลังโหลดข้อมูล...</p>
+                        </div>
+
+                        <div id="error-state" class="alert alert-danger d-none"></div>
+
+                        <!-- Chart container -->
+                        <div id="chart-area" class="d-none">
+                            <div id="main-chart" style="width: 100%; height: 440px;"></div>
+                        </div>
+
+                        <!-- Table container -->
+                        <div id="table-area" class="table-scroll d-none">
+                            <table class="table table-bordered table-hover table-sm mb-0" id="data-table">
+                                <thead><tr id="table-head"></tr></thead>
+                                <tbody id="table-body"></tbody>
+                            </table>
                         </div>
                     </div>
                     <div class="card-footer text-center text-muted" style="font-size: 12px;">
@@ -35,61 +93,323 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <script>
         const uuid = '<%= report.share_uuid %>';
-        
+        let currentType = '<%= report.chart_type || "table" %>';
+        let currentData = null;
+        let chartInst = null;
+        let userFilterValues = {};
+
+        const switcherBtns = document.querySelectorAll('.chart-type-btn');
+
+        function setActiveType(type) {
+            currentType = type;
+            switcherBtns.forEach(b => b.classList.toggle('active', b.dataset.type === type));
+        }
+        setActiveType(currentType);
+
+        switcherBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setActiveType(btn.dataset.type);
+                if (currentData) renderCurrentView();
+            });
+        });
+
         async function loadData() {
+            showState('loading');
             try {
-                const res = await fetch(`/shared/report/${uuid}/data`);
+                const paramsStr = encodeURIComponent(JSON.stringify(userFilterValues));
+                const res = await fetch(`/shared/report/${uuid}/data?params=${paramsStr}`);
                 const data = await res.json();
                 
-                if (!res.ok) {
-                    document.getElementById('chart-container').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
-                    return;
+                if (!res.ok) throw new Error(data.error || 'Failed to load report data');
+
+                currentData = data;
+                document.getElementById('stat-cols').textContent = data.columns.length;
+                document.getElementById('stat-rows').textContent = data.rows.length.toLocaleString();
+
+                if (data.detectedParams) {
+                    renderFilterBar(data.detectedParams);
                 }
 
-                const chart = echarts.init(document.getElementById('chart-container'));
-                const option = buildOption(data.chart_type, data.columns, data.rows);
-                chart.setOption(option);
-                
-                window.addEventListener('resize', () => chart.resize());
+                let vc = data.visual_config;
+                if (typeof vc === 'string') { try { vc = JSON.parse(vc); } catch(e){} }
+                if (vc && vc.chart_type) {
+                    setActiveType(vc.chart_type);
+                }
+
+                renderCurrentView();
             } catch (err) {
-                document.getElementById('chart-container').innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+                showState('error', err.message);
             }
         }
 
-        function buildOption(type, cols, rows) {
-            if (!rows || rows.length === 0) return { title: { text: 'No Data' }};
+        function getParamLabel(p) {
+            if (typeof p === 'object' && p.label) return p.label + ':';
+            const name = typeof p === 'object' ? p.name : p;
+            const n = String(name).toLowerCase();
             
-            let labelCol = cols[0];
-            let valCol = cols.length > 1 ? cols[1] : cols[0];
+            const dict = {
+                'start_date': 'วันที่เริ่มต้น:',
+                'begin_date': 'วันที่เริ่มต้น:',
+                'end_date': 'ถึงวันที่:',
+                'to_date': 'ถึงวันที่:',
+                'date': 'วันที่:',
+                'vstdate': 'วันที่รับบริการ:',
+                'hn': 'HN คนไข้:',
+                'patient_hn': 'HN คนไข้:',
+                'an': 'AN ผู้ป่วยใน:',
+                'vn': 'VN ผู้ป่วยนอก:',
+                'cid': 'เลขบัตรประชาชน:',
+                'patient_name': 'ชื่อ-นามสกุล คนไข้:',
+                'doctor_code': 'รหัสแพทย์:',
+                'doctor': 'แพทย์ผู้ตรวจ:',
+                'clinic': 'คลินิก/แผนก:',
+                'dept': 'แผนก:',
+                'ward': 'หอผู้ป่วย (Ward):',
+                'pttype': 'สิทธิการรักษา:',
+                'icd10': 'รหัสโรค (ICD10):',
+                'search_text': 'คำค้นหา:',
+                'search': 'คำค้นหา:'
+            };
 
-            const stringCols = cols.filter(c => typeof rows[0][c] === 'string');
-            const numCols = cols.filter(c => typeof rows[0][c] === 'number');
-            
-            if (stringCols.length > 0) labelCol = stringCols[0];
-            if (numCols.length > 0) valCol = numCols[0];
+            if (dict[n]) return dict[n];
+            return String(name).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ':';
+        }
 
-            const labels = rows.map(r => r[labelCol]);
-            const values = rows.map(r => r[valCol]);
+        function updateExportLink() {
+            const btn = document.getElementById('btn-export-shared');
+            if (!btn) return;
+            const paramsStr = encodeURIComponent(JSON.stringify(userFilterValues));
+            btn.href = `/shared/report/${uuid}/export?params=${paramsStr}`;
+        }
+
+        function renderFilterBar(detectedParams) {
+            const card = document.getElementById('filter-bar-card');
+            const container = document.getElementById('filter-controls-container');
+            if (!card || !container) return;
+
+            if (!detectedParams || detectedParams.length === 0) {
+                card.classList.add('d-none');
+                return;
+            }
+
+            card.classList.remove('d-none');
+            container.innerHTML = '';
+
+            detectedParams.forEach(p => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'd-flex align-items-center gap-1';
+
+                const label = document.createElement('label');
+                label.className = 'form-label mb-0 me-1 small text-secondary fw-bold';
+                label.style.fontSize = '12px';
+                label.textContent = getParamLabel(p);
+
+                let input;
+                if (p.type === 'date') {
+                    input = document.createElement('input');
+                    input.type = 'date';
+                    input.className = 'form-control form-control-sm param-input';
+                    input.style.width = '145px';
+                    
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const firstDayStr = `${year}-${month}-01`;
+                    const todayStr = `${year}-${month}-${String(now.getDate()).padStart(2, '0')}`;
+
+                    if (p.name.includes('start') || p.name.includes('begin')) {
+                        input.value = userFilterValues[p.name] || firstDayStr;
+                    } else {
+                        input.value = userFilterValues[p.name] || todayStr;
+                    }
+                } else if (p.type === 'in' || p.type === 'multiselect' || p.name.includes('position') || p.name.includes('doctor')) {
+                    input = document.createElement('select');
+                    input.className = 'form-select form-select-sm param-input';
+                    input.style.width = '165px';
+                    input.multiple = true;
+                    input.size = 2;
+                    input.title = 'กด Ctrl หรือ Shift ค้างไว้เพื่อเลือกหลายรายการ';
+
+                    let optValues = [];
+                    if (p.options && p.options.length > 0) {
+                        optValues = p.options;
+                    } else if (currentData && currentData.rows && currentData.rows.length > 0) {
+                        const colKey = Object.keys(currentData.rows[0]).find(k => k.toLowerCase() === p.name.toLowerCase()) || p.name;
+                        const uniques = new Set();
+                        currentData.rows.forEach(r => {
+                            const val = r[colKey];
+                            if (val !== undefined && val !== null && String(val).trim() !== '') {
+                                uniques.add(String(val).trim());
+                            }
+                        });
+                        optValues = Array.from(uniques);
+                    }
+
+                    optValues.forEach(optVal => {
+                        const opt = document.createElement('option');
+                        opt.value = optVal;
+                        opt.textContent = optVal;
+                        const curVal = userFilterValues[p.name];
+                        if (Array.isArray(curVal) ? curVal.includes(optVal) : curVal === optVal) {
+                            opt.selected = true;
+                        }
+                        input.appendChild(opt);
+                    });
+                } else {
+                    input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'form-control form-control-sm param-input';
+                    input.style.width = '140px';
+                    input.placeholder = 'คำค้นหา...';
+                    if (userFilterValues[p.name]) input.value = userFilterValues[p.name];
+                }
+
+                input.setAttribute('data-param-name', p.name);
+                if (input.tagName === 'SELECT' && input.multiple) {
+                    userFilterValues[p.name] = Array.from(input.selectedOptions).map(o => o.value);
+                } else {
+                    userFilterValues[p.name] = input.value;
+                }
+
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
+                container.appendChild(wrapper);
+            });
+
+            updateExportLink();
+        }
+
+        document.getElementById('btn-apply-filters')?.addEventListener('click', () => {
+            document.querySelectorAll('.param-input').forEach(inp => {
+                const name = inp.getAttribute('data-param-name');
+                if (name) {
+                    if (inp.tagName === 'SELECT' && inp.multiple) {
+                        userFilterValues[name] = Array.from(inp.selectedOptions).map(o => o.value);
+                    } else {
+                        userFilterValues[name] = inp.value;
+                    }
+                }
+            });
+            updateExportLink();
+            loadData();
+        });
+
+        function renderCurrentView() {
+            if (!currentData || !currentData.rows) return;
+            const { columns, rows, visual_config } = currentData;
+
+            if (currentType === 'table') {
+                showState('table');
+                buildTable(columns, rows);
+                return;
+            }
+
+            showState('chart');
+
+            let vc = visual_config;
+            if (typeof vc === 'string') { try { vc = JSON.parse(vc); } catch(e){} }
+
+            let xCol = (vc && vc.x) ? vc.x : columns[0];
+            let yFields = (vc && vc.y) ? vc.y : [];
+
+            if (!Array.isArray(yFields)) yFields = yFields ? [yFields] : [];
+            if (yFields.length === 0) {
+                yFields = columns.filter(c => c !== xCol && !c.toLowerCase().endsWith('_id') && !c.toLowerCase().endsWith('_code'));
+                if (yFields.length === 0 && columns.length > 1) yFields = [columns[1]];
+            }
+
+            const labels = rows.map(r => String(r[xCol] ?? ''));
+            requestAnimationFrame(() => renderChart(currentType, xCol, yFields, labels, rows));
+        }
+
+        function showState(state, msg = '') {
+            document.getElementById('loading-state').classList.toggle('d-none', state !== 'loading');
+            document.getElementById('error-state').classList.toggle('d-none',   state !== 'error');
+            document.getElementById('chart-area').classList.toggle('d-none',    state !== 'chart');
+            document.getElementById('table-area').classList.toggle('d-none',    state !== 'table');
+            if (state === 'error') document.getElementById('error-state').innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>${msg}`;
+        }
+
+        function buildTable(columns, rows) {
+            document.getElementById('table-head').innerHTML = columns.map(c => `<th>${c}</th>`).join('');
+            document.getElementById('table-body').innerHTML = rows.map(r => `<tr>${columns.map(c => `<td>${r[c] ?? ''}</td>`).join('')}</tr>`).join('');
+        }
+
+        function renderChart(type, xLabel, yFields, labels, rows) {
+            const container = document.getElementById('main-chart');
+            if (!container) return;
+
+            if (chartInst) {
+                chartInst.dispose();
+                chartInst = null;
+            }
+            chartInst = echarts.init(container);
+            window.addEventListener('resize', () => chartInst?.resize());
+
+            if (!labels || labels.length === 0) {
+                chartInst.setOption({ title: { text: 'ไม่มีข้อมูลในช่วงเวลาที่เลือก', left: 'center', top: 'center' } });
+                return;
+            }
+
+            const fields = Array.isArray(yFields) ? yFields : [yFields];
 
             if (type === 'pie') {
-                return {
-                    tooltip: { trigger: 'item' },
+                const primaryY = fields[0] || '';
+                const pieData = labels.map((l, idx) => ({
+                    name: String(l ?? ''),
+                    value: parseFloat(rows[idx][primaryY]) || 0
+                }));
+
+                chartInst.setOption({
+                    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                    legend: { type: 'scroll', bottom: 0 },
                     series: [{
+                        name: primaryY,
                         type: 'pie',
-                        radius: '70%',
-                        data: rows.map(r => ({ name: r[labelCol], value: r[valCol] }))
+                        radius: ['35%', '68%'],
+                        data: pieData,
+                        label: { formatter: '{b}\n{c}' }
                     }]
-                };
+                });
+            } else if (type === 'hbar') {
+                const series = fields.map(col => ({
+                    name: col,
+                    type: 'bar',
+                    data: rows.map(r => parseFloat(r[col]) || 0),
+                    barMaxWidth: 35
+                }));
+
+                chartInst.setOption({
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    legend: { bottom: 0 },
+                    grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+                    yAxis: { type: 'category', data: labels, inverse: true },
+                    xAxis: { type: 'value' },
+                    series: series
+                });
             } else {
-                return {
+                // bar or line
+                const series = fields.map(col => ({
+                    name: col,
+                    type: type,
+                    data: rows.map(r => parseFloat(r[col]) || 0),
+                    smooth: type === 'line',
+                    areaStyle: type === 'line' ? { opacity: 0.1 } : undefined,
+                    barMaxWidth: 55
+                }));
+
+                chartInst.setOption({
                     tooltip: { trigger: 'axis' },
-                    xAxis: { type: 'category', data: labels },
+                    legend: { bottom: 0 },
+                    grid: { left: '3%', right: '4%', bottom: '14%', containLabel: true },
+                    xAxis: { type: 'category', data: labels, axisLabel: { rotate: labels.length > 12 ? 35 : 0 } },
                     yAxis: { type: 'value' },
-                    series: [{ data: values, type: type === 'table' ? 'bar' : type }]
-                };
+                    series: series
+                });
             }
         }
 

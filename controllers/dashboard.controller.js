@@ -79,6 +79,24 @@ class DashboardController {
             res.status(500).json({ error: 'Failed to update dashboard' });
         }
     }
+
+    static async deleteDashboard(req, res) {
+        try {
+            const { id } = req.params;
+            const dashboard = await DashboardModel.findById(id);
+            if (!dashboard) return res.status(404).json({ error: 'Dashboard not found' });
+
+            if (dashboard.created_by !== req.session.user.id && req.session.user.role !== 'admin') {
+                return res.status(403).json({ error: 'Forbidden: You cannot delete this dashboard' });
+            }
+
+            await DashboardModel.delete(id);
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Delete dashboard error:', error);
+            res.status(500).json({ error: 'Failed to delete dashboard' });
+        }
+    }
 }
 
 module.exports = DashboardController;

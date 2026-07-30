@@ -13,9 +13,10 @@ router.post('/login', isGuest, AuthController.postLogin);
 router.get('/logout', isAuthenticated, AuthController.logout);
 
 // Shared Routes (Public)
-router.get('/shared/report/:uuid', SharedController.getView);
-router.post('/shared/report/:uuid/auth', SharedController.authenticate);
 router.get('/shared/report/:uuid/data', SharedController.getData);
+router.get('/shared/report/:uuid/export', SharedController.exportCSV);
+router.post('/shared/report/:uuid/auth', SharedController.authenticate);
+router.get('/shared/report/:uuid', SharedController.getView);
 
 // Protected Routes
 router.get('/', isAuthenticated, (req, res) => {
@@ -28,6 +29,7 @@ router.get('/', isAuthenticated, (req, res) => {
 // Reports Web Routes
 router.get('/reports', isAuthenticated, ReportController.getIndex);
 router.get('/reports/new', isAuthenticated, hasRole(['admin', 'analyst']), ReportController.getNewReport);
+router.get('/reports/:id/view', isAuthenticated, ReportController.getView);
 router.get('/reports/:id/export', isAuthenticated, ReportController.exportCSV);
 
 // Dashboards Web Routes

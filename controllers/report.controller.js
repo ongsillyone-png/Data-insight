@@ -1,5 +1,6 @@
 const SqlExecutionService = require('../services/sql-execution.service');
 const ChartRecommendationService = require('../services/chart-recommendation.service');
+const SqlParamService = require('../services/sql-param.service');
 const ReportModel = require('../models/report.model');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -27,12 +28,33 @@ class ReportController {
         });
     }
 
+    static async getView(req, res) {
+        try {
+            const { id } = req.params;
+            const hasPerm = await ReportModel.hasPermission(id, req.session.user.id, req.session.user.role, 'view');
+            if (!hasPerm) return res.status(403).send('คุณไม่มีสิทธิ์เข้าถึง Report นี้');
+
+            const report = await ReportModel.findById(id);
+            if (!report) return res.status(404).send('ไม่พบ Report ที่ต้องการ');
+
+            res.render('pages/reports/view', {
+                title: `${report.name} | Data Insight`,
+                user: req.session.user,
+                report
+            });
+        } catch (error) {
+            console.error('View report error:', error);
+            res.status(500).send('Internal Server Error');
+        }
+    }
+
     // --- APIs ---
     static async runQuery(req, res) {
-        const { sql_query } = req.body;
+        const { sql_query, params } = req.body;
+        const processedSql = SqlParamService.processSql(sql_query, params || {});
         
         // Execute SQL via service
-        const result = await SqlExecutionService.executePreview(sql_query, req.session.user.id);
+        const result = await SqlExecutionService.executePreview(processedSql, req.session.user.id);
         
         if (!result.success) {
             return res.status(400).json({ error: result.error });
@@ -40,24 +62,27 @@ class ReportController {
 
         // Recommend Chart
         const recommendedChart = ChartRecommendationService.recommendChart(result.columns, result.rows);
+        const detectedParams = SqlParamService.parseParameters(sql_query);
 
         res.json({
             columns: result.columns,
             rows: result.rows,
             executionTimeMs: result.executionTimeMs,
-            recommendedChart
+            recommendedChart,
+            detectedParams
         });
     }
 
     static async saveReport(req, res) {
         try {
-            const { name, description, sql_query, chart_type, chart_config, is_public } = req.body;
+            const { name, description, sql_query, chart_type, chart_config, is_public, visual_config } = req.body;
             const reportId = await ReportModel.create({
                 name,
                 description,
                 sql_query,
                 chart_type,
                 chart_config,
+                visual_config,
                 created_by: req.session.user.id,
                 is_public
             });
@@ -68,27 +93,65 @@ class ReportController {
         }
     }
 
+    static async updateReport(req, res) {
+        try {
+            const { id } = req.params;
+            const { name, description, sql_query, chart_type, chart_config, is_public, visual_config } = req.body;
+
+            const report = await ReportModel.findById(id);
+            if (!report) return res.status(404).json({ error: 'Report not found' });
+
+            if (report.created_by !== req.session.user.id && req.session.user.role !== 'admin') {
+                return res.status(403).json({ error: 'Forbidden: You cannot edit this report' });
+            }
+
+            await ReportModel.update(id, { name, description, sql_query, chart_type, chart_config, is_public, visual_config });
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Update report error:', error);
+            res.status(500).json({ error: 'Failed to update report' });
+        }
+    }
+
+
     static async getReportData(req, res) {
         try {
             const { id } = req.params;
+            let userParams = {};
+            if (req.query && req.query.params) {
+                try { userParams = typeof req.query.params === 'string' ? JSON.parse(req.query.params) : req.query.params; } catch (e) {}
+            } else if (req.body && req.body.params) {
+                userParams = req.body.params;
+            }
+
             const hasPerm = await ReportModel.hasPermission(id, req.session.user.id, req.session.user.role, 'view');
             if (!hasPerm) return res.status(403).json({ error: 'Forbidden' });
 
             const report = await ReportModel.findById(id);
             if (!report) return res.status(404).json({ error: 'Report not found' });
             
-            const result = await SqlExecutionService.executePreview(report.sql_query, req.session.user.id);
+            const processedSql = SqlParamService.processSql(report.sql_query, userParams);
+            const result = await SqlExecutionService.executePreview(processedSql, req.session.user.id);
             if (!result.success) {
                 return res.status(400).json({ error: result.error });
+            }
+
+            const detectedParams = SqlParamService.parseParameters(report.sql_query);
+
+            let vc = report.visual_config;
+            if (typeof vc === 'string') {
+                try { vc = JSON.parse(vc); } catch (e) {}
             }
 
             res.json({
                 report_id: report.id,
                 name: report.name,
                 chart_type: report.chart_type,
+                visual_config: vc,
                 chart_config: report.chart_config,
                 columns: result.columns,
-                rows: result.rows
+                rows: result.rows,
+                detectedParams
             });
         } catch (error) {
             console.error('Get report data error:', error);
@@ -126,9 +189,11 @@ class ReportController {
                 }).join(',') + '\n';
             });
 
-            res.setHeader('Content-Type', 'text/csv');
+            // BOM (\uFEFF) ทำให้ Excel เปิดไฟล์ UTF-8 ได้ถูกต้อง (ไม่เพี้ยน)
+            const bom = '\uFEFF';
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
             res.setHeader('Content-Disposition', `attachment; filename="report_${report.id}_${Date.now()}.csv"`);
-            res.send(csv);
+            res.send(bom + csv);
         } catch (error) {
             console.error('Export error:', error);
             res.status(500).send('Failed to export data');
@@ -231,6 +296,25 @@ class ReportController {
         } catch (error) {
             console.error('Update link share error:', error);
             res.status(500).json({ error: 'Failed to update link sharing' });
+        }
+    }
+
+    static async deleteReport(req, res) {
+        try {
+            const { id } = req.params;
+            const report = await ReportModel.findById(id);
+            if (!report) return res.status(404).json({ error: 'Report not found' });
+
+            // Only the owner or admin can delete
+            if (report.created_by !== req.session.user.id && req.session.user.role !== 'admin') {
+                return res.status(403).json({ error: 'Forbidden: You cannot delete this report' });
+            }
+
+            await ReportModel.delete(id);
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Delete report error:', error);
+            res.status(500).json({ error: 'Failed to delete report' });
         }
     }
 }
