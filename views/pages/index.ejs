@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,43 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- AdminLTE 4 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
+    <style>
+        .stat-card {
+            transition: all 0.25s ease-in-out;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+        }
+        .quick-action-btn {
+            transition: all 0.2s ease;
+            border-radius: 8px;
+        }
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+        }
+        .badge-chart-type {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .hero-banner {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            border-radius: 14px;
+            padding: 24px 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .table-custom-hover tbody tr {
+            transition: background-color 0.15s ease;
+        }
+        .table-custom-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.04);
+        }
+    </style>
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <div class="app-wrapper">
@@ -21,25 +58,395 @@
 
         <!-- Main Content -->
         <main class="app-main">
-            <div class="app-content-header">
+            <!-- Content Header -->
+            <div class="app-content-header pt-3 pb-2">
                 <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-sm-6"> <h3 class="mb-0">Dashboard</h3> </div>
+                    <!-- Hero / Welcome Banner -->
+                    <div class="hero-banner mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <h3 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                                <i class="bi bi-speedometer2 text-info"></i>
+                                Data Insight Portal
+                            </h3>
+                            <p class="mb-0 text-white-50" style="font-size: 0.95rem;">
+                                ระบบรายงานและวิเคราะห์ข้อมูล HIS แบบไดนามิก (Self-Service Business Intelligence)
+                            </p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill shadow-sm">
+                                <i class="bi bi-person-circle me-1"></i>
+                                <%= user ? (user.email || user.username) : 'Guest' %> 
+                                (<%= user ? user.role.toUpperCase() : 'USER' %>)
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Content Body -->
             <div class="app-content">
                 <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header"><h3 class="card-title">Welcome</h3></div>
-                                <div class="card-body">
-                                    Project setup is successful! Core foundation Node.js + Express + EJS + AdminLTE is ready.
+
+                    <!-- 1. Top Stat Cards (4 Boxes) -->
+                    <div class="row g-3 mb-4">
+                        <!-- Total Dashboards -->
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card border-0 shadow-sm stat-card h-100 bg-white">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="text-muted small fw-medium text-uppercase">Total Dashboards</span>
+                                            <h2 class="fw-bold mb-0 mt-1 text-primary"><%= stats ? stats.totalDashboards : 0 %></h2>
+                                        </div>
+                                        <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary">
+                                            <i class="bi bi-grid-3x3-gap-fill fs-2"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                                        <a href="/dashboards" class="text-decoration-none small text-primary fw-medium">
+                                            ดู Dashboard ทั้งหมด <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Reports -->
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card border-0 shadow-sm stat-card h-100 bg-white">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="text-muted small fw-medium text-uppercase">Total Reports</span>
+                                            <h2 class="fw-bold mb-0 mt-1 text-success"><%= stats ? stats.totalReports : 0 %></h2>
+                                        </div>
+                                        <div class="rounded-3 p-3 bg-success bg-opacity-10 text-success">
+                                            <i class="bi bi-file-earmark-bar-graph-fill fs-2"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                                        <a href="/reports" class="text-decoration-none small text-success fw-medium">
+                                            ดูรายงานทั้งหมด <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Queries Executed / Audit Logs -->
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card border-0 shadow-sm stat-card h-100 bg-white">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="text-muted small fw-medium text-uppercase">Recent SQL Executions</span>
+                                            <h2 class="fw-bold mb-0 mt-1 text-info"><%= stats ? stats.totalLogs : 0 %></h2>
+                                        </div>
+                                        <div class="rounded-3 p-3 bg-info bg-opacity-10 text-info">
+                                            <i class="bi bi-terminal-fill fs-2"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                                        <% if (user && user.role === 'admin') { %>
+                                        <a href="/audit" class="text-decoration-none small text-info fw-medium">
+                                            ดู Audit Logs <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                        <% } else { %>
+                                        <span class="text-muted small">บันทึกการทำงานระบบ</span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HIS Database Status -->
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card border-0 shadow-sm stat-card h-100 bg-white">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="text-muted small fw-medium text-uppercase">HIS DB Connection</span>
+                                            <h4 class="fw-bold mb-0 mt-2">
+                                                <% if (stats && stats.hisConnected) { %>
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                                        <i class="bi bi-check-circle-fill me-1"></i> Connected
+                                                    </span>
+                                                <% } else { %>
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Disconnected
+                                                    </span>
+                                                <% } %>
+                                            </h4>
+                                        </div>
+                                        <div class="rounded-3 p-3 <%= (stats && stats.hisConnected) ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger' %>">
+                                            <i class="bi bi-database-fill-check fs-2"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small">
+                                            <%= (stats && stats.hisConnected) ? 'ฐานข้อมูล HIS พร้อมใช้งาน' : 'กรุณาตรวจสอบการเชื่อมต่อ DB' %>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- 2. Quick Action Toolbar -->
+                    <div class="card border-0 shadow-sm mb-4 bg-white">
+                        <div class="card-body py-3">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-semibold text-secondary me-2"><i class="bi bi-lightning-charge-fill text-warning"></i> ทางลัดการใช้งาน:</span>
+                                    <% if (user && (user.role === 'admin' || user.role === 'analyst')) { %>
+                                    <a href="/reports/new" class="btn btn-primary btn-sm px-3 quick-action-btn shadow-sm">
+                                        <i class="bi bi-plus-circle me-1"></i> สร้างรายงานใหม่
+                                    </a>
+                                    <a href="/dashboards/new" class="btn btn-success btn-sm px-3 quick-action-btn shadow-sm">
+                                        <i class="bi bi-layout-wysiwyg me-1"></i> สร้าง Dashboard
+                                    </a>
+                                    <% } %>
+                                    <a href="/reports" class="btn btn-outline-secondary btn-sm px-3 quick-action-btn">
+                                        <i class="bi bi-search me-1"></i> รายงานทั้งหมด
+                                    </a>
+                                </div>
+
+                                <div class="d-flex align-items-center">
+                                    <div class="input-group input-group-sm" style="max-width: 280px;">
+                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text" id="quickSearchInput" class="form-control bg-light border-start-0" placeholder="ค้นหารายงานด่วน...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Main Dashboard Grid -->
+                    <div class="row g-4">
+                        <!-- Left Column: Recent Dashboards & Recent Reports -->
+                        <div class="col-12 col-lg-7">
+
+                            <!-- Recent Dashboards -->
+                            <div class="card border-0 shadow-sm mb-4 bg-white">
+                                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                                    <h5 class="card-title fw-bold mb-0 text-dark">
+                                        <i class="bi bi-grid-fill text-primary me-2"></i>
+                                        Dashboard ล่าสุด (Recent Dashboards)
+                                    </h5>
+                                    <a href="/dashboards" class="btn btn-sm btn-light text-primary fw-medium">
+                                        ดูทั้งหมด <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </div>
+                                <div class="card-body p-0">
+                                    <% if (recentDashboards && recentDashboards.length > 0) { %>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0 table-custom-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="ps-3">ชื่อ Dashboard</th>
+                                                    <th>ผู้สร้าง</th>
+                                                    <th>วันที่สร้าง</th>
+                                                    <th class="text-end pe-3">ดำเนินการ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="searchable-items">
+                                                <% recentDashboards.forEach(d => { %>
+                                                <tr>
+                                                    <td class="ps-3 fw-semibold text-dark">
+                                                        <i class="bi bi-layout-text-window-reverse text-primary me-2"></i>
+                                                        <%= d.name %>
+                                                    </td>
+                                                    <td class="text-muted small">
+                                                        <%= d.creator_email || 'System' %>
+                                                    </td>
+                                                    <td class="text-muted small">
+                                                        <%= new Date(d.created_at).toLocaleDateString('th-TH') %>
+                                                    </td>
+                                                    <td class="text-end pe-3">
+                                                        <% if (user && (user.role === 'admin' || user.role === 'analyst')) { %>
+                                                        <a href="/dashboards/<%= d.id %>/edit" class="btn btn-sm btn-outline-primary py-1 px-2">
+                                                            <i class="bi bi-pencil-square me-1"></i> แก้ไข
+                                                        </a>
+                                                        <% } %>
+                                                    </td>
+                                                </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <% } else { %>
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                        ยังไม่มี Dashboard ในระบบ
+                                        <% if (user && (user.role === 'admin' || user.role === 'analyst')) { %>
+                                        <div class="mt-2">
+                                            <a href="/dashboards/new" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-plus-lg me-1"></i> สร้าง Dashboard แรก
+                                            </a>
+                                        </div>
+                                        <% } %>
+                                    </div>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Recent Reports -->
+                            <div class="card border-0 shadow-sm bg-white">
+                                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                                    <h5 class="card-title fw-bold mb-0 text-dark">
+                                        <i class="bi bi-file-earmark-bar-graph text-success me-2"></i>
+                                        รายงานล่าสุด (Recent Reports)
+                                    </h5>
+                                    <a href="/reports" class="btn btn-sm btn-light text-success fw-medium">
+                                        ดูทั้งหมด <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </div>
+                                <div class="card-body p-0">
+                                    <% if (recentReports && recentReports.length > 0) { %>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0 table-custom-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="ps-3">ชื่อรายงาน</th>
+                                                    <th>ประเภทกราฟ</th>
+                                                    <th>ผู้สร้าง</th>
+                                                    <th class="text-end pe-3">ดำเนินการ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="searchable-items">
+                                                <% recentReports.forEach(r => { %>
+                                                <tr>
+                                                    <td class="ps-3 fw-semibold text-dark">
+                                                        <%= r.name %>
+                                                        <% if (r.description) { %>
+                                                        <div class="small text-muted text-truncate" style="max-width: 220px;"><%= r.description %></div>
+                                                        <% } %>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-light text-dark border badge-chart-type text-uppercase">
+                                                            <% if (r.chart_type === 'bar') { %><i class="bi bi-bar-chart-fill text-primary me-1"></i> Bar Chart
+                                                            <% } else if (r.chart_type === 'line') { %><i class="bi bi-graph-up text-success me-1"></i> Line Chart
+                                                            <% } else if (r.chart_type === 'pie') { %><i class="bi bi-pie-chart-fill text-warning me-1"></i> Pie Chart
+                                                            <% } else { %><i class="bi bi-table text-secondary me-1"></i> Table
+                                                            <% } %>
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-muted small">
+                                                        <%= r.creator_email || 'System' %>
+                                                    </td>
+                                                    <td class="text-end pe-3">
+                                                        <a href="/reports/<%= r.id %>/view" class="btn btn-sm btn-outline-success py-1 px-2">
+                                                            <i class="bi bi-eye me-1"></i> เปิดดู
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <% } else { %>
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="bi bi-folder-x fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                        ยังไม่มีรายงานในระบบ
+                                        <% if (user && (user.role === 'admin' || user.role === 'analyst')) { %>
+                                        <div class="mt-2">
+                                            <a href="/reports/new" class="btn btn-sm btn-success">
+                                                <i class="bi bi-plus-lg me-1"></i> สร้างรายงานแรก
+                                            </a>
+                                        </div>
+                                        <% } %>
+                                    </div>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Right Column: System Info & Recent Activity Logs -->
+                        <div class="col-12 col-lg-5">
+
+                            <!-- System Info & Status Box -->
+                            <div class="card border-0 shadow-sm mb-4 bg-white">
+                                <div class="card-header bg-white border-bottom py-3">
+                                    <h5 class="card-title fw-bold mb-0 text-dark">
+                                        <i class="bi bi-info-circle-fill text-info me-2"></i>
+                                        ข้อมูลระบบและฐานข้อมูล (System Info)
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom-0">
+                                            <span class="text-muted"><i class="bi bi-hdd-network me-2 text-secondary"></i>ฐานข้อมูล HIS Target:</span>
+                                            <span class="fw-medium text-dark"><%= (stats && stats.hisConnected) ? 'เชื่อมต่อแล้ว 🟢' : 'ไม่พบการเชื่อมต่อ 🔴' %></span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom-0">
+                                            <span class="text-muted"><i class="bi bi-shield-check me-2 text-secondary"></i>SQL Security Guard:</span>
+                                            <span class="badge bg-success-subtle text-success border border-success border-opacity-25">SELECT Only (Read-Only)</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom-0">
+                                            <span class="text-muted"><i class="bi bi-cpu me-2 text-secondary"></i>Engine & Framework:</span>
+                                            <span class="fw-medium text-dark">Node.js + Express + ECharts</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Audit Activity Logs -->
+                            <% if (user && (user.role === 'admin' || user.role === 'analyst')) { %>
+                            <div class="card border-0 shadow-sm bg-white">
+                                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                                    <h5 class="card-title fw-bold mb-0 text-dark">
+                                        <i class="bi bi-journal-code text-danger me-2"></i>
+                                        ประวัติคำสั่ง SQL ล่าสุด (Audit Trail)
+                                    </h5>
+                                    <% if (user.role === 'admin') { %>
+                                    <a href="/audit" class="btn btn-sm btn-light text-danger fw-medium">
+                                        ดูทั้งหมด <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                    <% } %>
+                                </div>
+                                <div class="card-body p-0">
+                                    <% if (recentLogs && recentLogs.length > 0) { %>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0 text-sm">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="ps-3">ผู้ใช้งาน</th>
+                                                    <th>คำสั่ง SQL</th>
+                                                    <th class="text-end pe-3">เวลา</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% recentLogs.forEach(log => { %>
+                                                <tr>
+                                                    <td class="ps-3 fw-medium text-dark" style="font-size: 0.85rem;">
+                                                        <%= log.user_email || 'User #' + log.user_id %>
+                                                    </td>
+                                                    <td>
+                                                        <code class="text-muted small text-truncate d-block" style="max-width: 160px;" title="<%= log.query_text %>">
+                                                            <%= log.query_text %>
+                                                        </code>
+                                                    </td>
+                                                    <td class="text-end pe-3 text-muted small" style="font-size: 0.78rem;">
+                                                        <%= new Date(log.executed_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) %>
+                                                    </td>
+                                                </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <% } else { %>
+                                    <div class="text-center py-4 text-muted small">
+                                        ไม่มีประวัติคำสั่ง SQL ล่าสุด
+                                    </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <% } %>
+
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </main>
@@ -51,5 +458,26 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/js/adminlte.min.js"></script>
+
+    <!-- Quick Search Client-side Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('quickSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', function() {
+                    const term = this.value.toLowerCase().trim();
+                    const items = document.querySelectorAll('.searchable-items tr');
+                    items.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        if (text.includes(term)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
