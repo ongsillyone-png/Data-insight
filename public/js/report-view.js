@@ -41,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const selected = getSelectedYColumns();
         const labelEl = document.getElementById('y-multi-label');
         if (!labelEl) return;
-
         if (selected.length === 0) {
             labelEl.textContent = '— ไม่เลือก (ใช้อัตโนมัติ) —';
         } else if (selected.length === 1) {
@@ -49,6 +48,34 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             labelEl.textContent = `เลือกแล้ว (${selected.length}): ${selected.join(', ')}`;
         }
+    }
+
+    // ── Multi-X helpers ──────────────────────────────────────────────────────
+    function getSelectedXColumns() {
+        const checkedBoxes = document.querySelectorAll('#x-multi-options input[type="checkbox"]:checked');
+        return Array.from(checkedBoxes).map(cb => cb.value);
+    }
+
+    function updateXMultiLabel() {
+        const selected = getSelectedXColumns();
+        const labelEl = document.getElementById('x-multi-label');
+        if (!labelEl) return;
+        if (selected.length === 0) {
+            labelEl.textContent = '— ไม่เลือก (ใช้อัตโนมัติ) —';
+        } else if (selected.length === 1) {
+            labelEl.textContent = selected[0];
+        } else {
+            labelEl.textContent = `(${selected.length}) ${selected.join(' + ')}`;
+        }
+    }
+
+    /**
+     * Normalise stored visual_config.x to always be an array
+     */
+    function normaliseSavedX(raw) {
+        if (Array.isArray(raw)) return raw.filter(Boolean);
+        if (typeof raw === 'string' && raw) return [raw];
+        return [];
     }
 
     function renderCurrentView() {
@@ -74,15 +101,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const selX = document.getElementById('sel-x')?.value;
+        const selectedX = getSelectedXColumns();
         const selectedY = getSelectedYColumns();
 
         const cols = currentData.columns || [];
         const strCols = cols.filter(c => typeof currentData.rows[0]?.[c] === 'string' || currentData.rows[0]?.[c] instanceof Date);
         const numCols = cols.filter(c => typeof currentData.rows[0]?.[c] === 'number');
 
-        const xField = selX || meta.visual_config?.x || strCols[0] || cols[0];
-        
+        // ── Resolve X fields (multi-column support) ──────────────────────────
+        const savedXArr = normaliseSavedX(meta.visual_config?.x);
+        let xFields = selectedX.length > 0 ? selectedX
+                    : savedXArr.length   > 0 ? savedXArr
+                    : [strCols[0] || cols[0]];
+        if (!xFields || xFields.length === 0) xFields = [cols[0]];
+        // Filter out columns that don't exist in this query result
+        xFields = xFields.filter(f => cols.includes(f));
+        if (xFields.length === 0) xFields = [strCols[0] || cols[0]];
+
+        // ── Resolve Y fields ─────────────────────────────────────────────────
         let yFields = selectedY;
         if (!yFields || yFields.length === 0) {
             const savedY = meta.visual_config?.y;
@@ -91,17 +127,23 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (numCols.length > 0) yFields = numCols;
             else yFields = [cols[cols.length - 1]];
         }
+        yFields = yFields.filter(f => cols.includes(f));
+        if (yFields.length === 0) yFields = [numCols[0] || cols[cols.length - 1]];
 
-        meta.visual_config = { x: xField, y: yFields, chart_type: currentType };
+        meta.visual_config = { x: xFields, y: yFields, chart_type: currentType };
 
-        const labels = currentData.rows.map(r => String(r[xField] ?? ''));
+        // ── Concatenate multi-X fields into a single label string ─────────────
+        const X_SEP = ' | ';
+        const labels = currentData.rows.map(r =>
+            xFields.map(f => String(r[f] ?? '')).join(X_SEP)
+        );
 
         if (currentType === 'table') {
             showState('table');
-            renderMultiYTable(xField, yFields, currentData.rows);
+            renderMultiYTable(xFields, yFields, currentData.rows);
         } else {
             showState('chart');
-            requestAnimationFrame(() => renderMultiYChart(currentType, xField, yFields, labels, currentData.rows));
+            requestAnimationFrame(() => renderMultiYChart(currentType, xFields, yFields, labels, currentData.rows));
         }
     }
 
@@ -232,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.appendChild(input);
             container.appendChild(wrapper);
         });
+        updateExportLink();
     }
 
     function getParamLabel(p) {
@@ -267,6 +310,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(name).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ':';
     }
 
+    function updateExportLink() {
+        const btn = document.getElementById('btn-export-csv');
+        if (!btn) return;
+        const paramsStr = encodeURIComponent(JSON.stringify(userFilterValues));
+        btn.href = `/reports/${meta.id}/export?params=${paramsStr}`;
+    }
+
+    const btnExportCsv = document.getElementById('btn-export-csv');
+    if (btnExportCsv) {
+        btnExportCsv.addEventListener('click', () => {
+            updateExportLink();
+        });
+    }
+
     document.getElementById('btn-apply-filters')?.addEventListener('click', () => {
         document.querySelectorAll('.param-input').forEach(inp => {
             const name = inp.getAttribute('data-param-name');
@@ -278,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+        updateExportLink();
         loadData();
     });
 
@@ -306,25 +364,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function populateConfigDropdowns(columns) {
-        const selX = document.getElementById('sel-x');
+        const containerX = document.getElementById('x-multi-options');
         const containerY = document.getElementById('y-multi-options');
-        if (!selX || !containerY) return;
+        if (!containerX || !containerY) return;
 
-        const savedX = (meta.visual_config && meta.visual_config.x) || selX.value;
-        let savedY = meta.visual_config && meta.visual_config.y;
+        const savedXArr = normaliseSavedX(meta.visual_config?.x);
+        let savedY = meta.visual_config?.y;
         if (typeof savedY === 'string') savedY = [savedY];
         if (!Array.isArray(savedY)) savedY = [];
 
-        // Populate X
-        selX.innerHTML = '<option value="">— ไม่เลือก (ใช้อัตโนมัติ) —</option>';
-        columns.forEach(col => {
-            const optX = document.createElement('option');
-            optX.value = col; optX.textContent = col;
-            if (col === savedX) optX.selected = true;
-            selX.appendChild(optX);
+        // ── Populate X checkboxes ─────────────────────────────────────────────
+        containerX.innerHTML = '';
+        // Hint row
+        const hintDiv = document.createElement('div');
+        hintDiv.className = 'px-2 py-1 mb-1 border-bottom';
+        hintDiv.innerHTML = `<small class="text-muted fst-italic">✨ เลือก 1 ค่า = แกน X เดี่ยว, เลือกหลายค่า = รวมป้ายแกน X ด้วย " | "</small>`;
+        containerX.appendChild(hintDiv);
+
+        columns.forEach((col, idx) => {
+            const isChecked = savedXArr.includes(col);
+            const div = document.createElement('div');
+            div.className = 'form-check py-1 px-2 rounded';
+            div.style.cursor = 'pointer';
+            div.innerHTML = `
+                <input class="form-check-input x-col-checkbox" type="checkbox" value="${col}" id="chk-x-${idx}" ${isChecked ? 'checked' : ''}>
+                <label class="form-check-label w-100 text-truncate ms-1" for="chk-x-${idx}" style="cursor:pointer; font-size:12px;">${col}</label>
+            `;
+            containerX.appendChild(div);
         });
 
-        // Populate Y checkboxes
+        updateXMultiLabel();
+
+        containerX.querySelectorAll('.x-col-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => {
+                updateXMultiLabel();
+                renderCurrentView();
+            });
+        });
+
+        // ── Populate Y checkboxes ─────────────────────────────────────────────
         containerY.innerHTML = '';
         columns.forEach((col, idx) => {
             const isChecked = savedY.includes(col);
@@ -339,26 +417,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateYMultiLabel();
 
-        // Listen for checkbox changes
         containerY.querySelectorAll('.y-col-checkbox').forEach(cb => {
             cb.addEventListener('change', () => {
                 updateYMultiLabel();
                 renderCurrentView();
             });
         });
-
-        if (!selX.__hasChangeListener) {
-            selX.addEventListener('change', renderCurrentView);
-            selX.__hasChangeListener = true;
-        }
     }
 
     document.getElementById('btn-apply-config')?.addEventListener('click', () => {
         if (!currentData || !currentData.rows) return;
-        const x = document.getElementById('sel-x').value;
+        const x = getSelectedXColumns();
         const y = getSelectedYColumns();
-
-        meta.visual_config = { x, y, chart_type: currentType };
+        meta.visual_config = {
+            x: x.length > 0 ? x : normaliseSavedX(meta.visual_config?.x),
+            y,
+            chart_type: currentType
+        };
         renderCurrentView();
         showToast('💡 ปรับพรีวิวมุมมองกราฟเรียบร้อยแล้ว กด "บันทึก" เพื่อบันทึกลงระบบ');
     });
@@ -367,23 +442,29 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCurrentView();
     }
 
-    function renderMultiYTable(xField, yFields, rows) {
-        const ths = `<th>${xField}</th>` + yFields.map(y => `<th>${y}</th>`).join('');
+    function renderMultiYTable(xFields, yFields, rows) {
+        const xArr = Array.isArray(xFields) ? xFields : [xFields];
+        // X column headers get a light-blue class to visually distinguish dimensions
+        const xThs = xArr.map(x => `<th class="table-primary" style="white-space:nowrap">${x}</th>`).join('');
+        const yThs = yFields.map(y => `<th>${y}</th>`).join('');
+        const ths  = xThs + yThs;
+
         const trs = rows.map(r => {
-            const labelTd = `<td>${r[xField] ?? ''}</td>`;
-            const valTds = yFields.map(y => {
+            // Render each X dimension as its own cell
+            const xTds = xArr.map(x => `<td class="fw-medium">${r[x] ?? ''}</td>`).join('');
+            const yTds = yFields.map(y => {
                 const v = r[y];
                 return `<td>${typeof v === 'number' ? v.toLocaleString() : (v ?? '')}</td>`;
             }).join('');
-            return `<tr>${labelTd}${valTds}</tr>`;
+            return `<tr>${xTds}${yTds}</tr>`;
         }).join('');
 
         document.getElementById('table-head').innerHTML = ths;
         document.getElementById('table-body').innerHTML = trs;
     }
 
-    // ── Multi-Series Chart Rendering ──────────────────────────────────────────
-    function renderMultiYChart(type, xField, yFields, labels, rows) {
+    // ── Multi-Series Chart Rendering (supports multi-column X axis) ───────────
+    function renderMultiYChart(type, xFields, yFields, labels, rows) {
         const container = document.getElementById('main-chart');
         if (!container) return;
 
@@ -396,6 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // labels array already has multi-X values concatenated (built in renderCurrentView)
         if (type === 'pie') {
             const firstY = yFields[0] || (currentData?.columns ? currentData.columns[currentData.columns.length - 1] : '');
             chartInst.setOption({
@@ -404,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 series: [{
                     type: 'pie',
                     radius: ['35%', '68%'],
-                    data: rows.map(r => ({ name: String(r[xField] ?? ''), value: parseFloat(r[firstY]) || 0 })),
+                    data: labels.map((lbl, idx) => ({ name: lbl, value: parseFloat(rows[idx][firstY]) || 0 })),
                     label: { formatter: '{b}\n{c}' }
                 }]
             });
@@ -605,9 +687,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSaveSql?.addEventListener('click', async () => {
             const sql       = monacoEditor ? monacoEditor.getValue() : meta.sql_query;
             const chartType = currentType;
-            const x = document.getElementById('sel-x')?.value || (meta.visual_config?.x || '');
+            let x = getSelectedXColumns();
+            if (!x || x.length === 0) x = normaliseSavedX(meta.visual_config?.x);
             let y = getSelectedYColumns();
-            if (!y || y.length === 0) y = meta.visual_config?.y || '';
+            if (!y || y.length === 0) {
+                const sy = meta.visual_config?.y;
+                y = Array.isArray(sy) ? sy : (sy ? [sy] : []);
+            }
 
             const visualConfig = { x, y, chart_type: chartType };
 

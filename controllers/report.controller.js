@@ -168,7 +168,15 @@ class ReportController {
             const report = await ReportModel.findById(id);
             if (!report) return res.status(404).json({ error: 'Report not found' });
             
-            const result = await SqlExecutionService.executePreview(report.sql_query, req.session.user.id, 10000); // 10k limit for export
+            let userParams = {};
+            if (req.query && req.query.params) {
+                try {
+                    userParams = typeof req.query.params === 'string' ? JSON.parse(req.query.params) : req.query.params;
+                } catch (e) {}
+            }
+
+            const processedSql = SqlParamService.processSql(report.sql_query, userParams);
+            const result = await SqlExecutionService.executePreview(processedSql, req.session.user.id, 10000); // 10k limit for export
             if (!result.success) {
                 return res.status(400).send('Error generating export: ' + result.error);
             }

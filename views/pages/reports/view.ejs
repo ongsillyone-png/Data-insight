@@ -48,7 +48,7 @@
                     </div>
                     <!-- Action buttons -->
                     <div class="col-md-5 text-md-end d-flex gap-2 justify-content-md-end flex-wrap">
-                        <a href="/reports/<%= report.id %>/export" class="btn btn-sm btn-success" target="_blank">
+                        <a href="/reports/<%= report.id %>/export" class="btn btn-sm btn-success" target="_blank" id="btn-export-csv">
                             <i class="bi bi-file-earmark-excel"></i> Export CSV
                         </a>
                         <% if (report.created_by === user.id || user.role === 'admin') { %>
@@ -165,15 +165,20 @@
                         <!-- ── Visual Config Panel (แกน X, แกน Y หลายค่า) ── -->
                         <div class="card-body p-2 border-top bg-light" id="visual-config-panel">
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-4">
-                                    <div class="d-flex align-items-center gap-1">
-                                        <label class="form-label mb-0 small text-secondary fw-bold text-nowrap" style="font-size:12px;"><i class="bi bi-arrow-right text-primary me-1"></i>แกน X (กลุ่ม):</label>
-                                        <select class="form-select form-select-sm" id="sel-x">
-                                            <option value="">— ไม่เลือก (ใช้อัตโนมัติ) —</option>
-                                        </select>
-                                    </div>
-                                </div>
                                 <div class="col-md-5">
+                                     <div class="d-flex align-items-center gap-1">
+                                         <label class="form-label mb-0 small text-secondary fw-bold text-nowrap" style="font-size:12px;"><i class="bi bi-arrow-right text-primary me-1"></i>แกน X (เลือกได้หลายค่า):</label>
+                                         <div class="dropdown flex-grow-1" id="x-multi-select-dropdown">
+                                             <button class="btn btn-sm btn-white border dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center bg-white py-1 px-2" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" id="btn-x-multi" style="min-height:31px;">
+                                                 <span id="x-multi-label" class="text-truncate" style="font-size:12px;">— ไม่เลือก (ใช้อัตโนมัติ) —</span>
+                                             </button>
+                                             <div class="dropdown-menu p-2 shadow" id="x-multi-options" style="max-height:240px; overflow-y:auto; font-size:12px; min-width:240px;">
+                                                 <!-- Checkboxes populated dynamically -->
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center gap-1">
                                         <label class="form-label mb-0 small text-secondary fw-bold text-nowrap" style="font-size:12px;"><i class="bi bi-arrow-up text-success me-1"></i>แกน Y (เลือกได้หลายค่า):</label>
                                         <div class="dropdown flex-grow-1" id="y-multi-select-dropdown">
