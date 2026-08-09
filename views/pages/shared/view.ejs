@@ -313,17 +313,30 @@
             let vc = visual_config;
             if (typeof vc === 'string') { try { vc = JSON.parse(vc); } catch(e){} }
 
-            let xCol = (vc && vc.x) ? vc.x : columns[0];
-            let yFields = (vc && vc.y) ? vc.y : [];
+            const strCols = columns.filter(c => typeof rows[0]?.[c] === 'string' || rows[0]?.[c] instanceof Date);
+            const numCols = columns.filter(c => typeof rows[0]?.[c] === 'number');
 
-            if (!Array.isArray(yFields)) yFields = yFields ? [yFields] : [];
-            if (yFields.length === 0) {
-                yFields = columns.filter(c => c !== xCol && !c.toLowerCase().endsWith('_id') && !c.toLowerCase().endsWith('_code'));
+            let xFields = vc && vc.x;
+            if (typeof xFields === 'string' && xFields) xFields = [xFields];
+            if (!Array.isArray(xFields) || xFields.length === 0) {
+                xFields = [strCols[0] || columns[0]];
+            }
+            xFields = xFields.filter(f => columns.includes(f));
+            if (xFields.length === 0) xFields = [strCols[0] || columns[0]];
+
+            let yFields = (vc && vc.y) ? vc.y : [];
+            if (typeof yFields === 'string' && yFields) yFields = [yFields];
+            if (!Array.isArray(yFields) || yFields.length === 0) {
+                yFields = columns.filter(c => !xFields.includes(c) && !c.toLowerCase().endsWith('_id') && !c.toLowerCase().endsWith('_code'));
                 if (yFields.length === 0 && columns.length > 1) yFields = [columns[1]];
             }
+            yFields = yFields.filter(f => columns.includes(f));
+            if (yFields.length === 0) yFields = [numCols[0] || columns[columns.length - 1]];
 
-            const labels = rows.map(r => String(r[xCol] ?? ''));
-            requestAnimationFrame(() => renderChart(currentType, xCol, yFields, labels, rows));
+            const X_SEP = ' | ';
+            const labels = rows.map(r => xFields.map(f => String(r[f] ?? '')).join(X_SEP));
+
+            requestAnimationFrame(() => renderChart(currentType, xFields[0] || 'Row', yFields, labels, rows));
         }
 
         function showState(state, msg = '') {

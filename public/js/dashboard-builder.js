@@ -297,12 +297,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 delete charts[uniqueWidgetId];
             }
 
-            const { yFields, xCol, rows } = aggregateWidgetData(data);
-            const tableCols = [xCol, ...yFields];
+            const { yFields, xFields, rows } = aggregateWidgetData(data);
+            const xArr = Array.isArray(xFields) ? xFields : [xFields];
+            const tableCols = [...xArr, ...yFields];
 
             const ths = tableCols.map(c => `<th style="position:sticky; top:0; background:#343a40; color:#fff; font-size:11px; padding:4px 8px; z-index: 1;">${c}</th>`).join('');
             const trs = rows.map(r =>
-                `<tr>${tableCols.map(c => `<td style="font-size:11px; padding:4px 8px;">${r[c] ?? ''}</td>`).join('')}</tr>`
+                `<tr>${tableCols.map(c => `<td style="font-size:11px; padding:4px 8px;">${typeof r[c] === 'number' ? r[c].toLocaleString() : (r[c] ?? '')}</td>`).join('')}</tr>`
             ).join('');
 
             container.innerHTML = `
@@ -345,19 +346,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const strCols = cols.filter(c => typeof rows[0]?.[c] === 'string' || rows[0]?.[c] instanceof Date);
         const numCols = cols.filter(c => typeof rows[0]?.[c] === 'number');
 
-        const xField = (vc && vc.x) || strCols[0] || cols[0];
-        
+        let xFields = vc && vc.x;
+        if (typeof xFields === 'string' && xFields) xFields = [xFields];
+        if (!Array.isArray(xFields) || xFields.length === 0) {
+            xFields = [strCols[0] || cols[0]];
+        }
+        xFields = xFields.filter(f => cols.includes(f));
+        if (xFields.length === 0) xFields = [strCols[0] || cols[0]];
+
         let yFields = vc && vc.y;
-        if (typeof yFields === 'string') yFields = [yFields];
+        if (typeof yFields === 'string' && yFields) yFields = [yFields];
         if (!Array.isArray(yFields) || yFields.length === 0) {
             const metricCols = numCols.filter(c => !c.toLowerCase().endsWith('_id') && !c.toLowerCase().endsWith('code') && c.toLowerCase() !== 'id');
             yFields = metricCols.length > 0 ? metricCols : (numCols.length > 0 ? [numCols[numCols.length - 1]] : [cols[cols.length - 1]]);
         }
+        yFields = yFields.filter(f => cols.includes(f));
+        if (yFields.length === 0) yFields = [numCols[0] || cols[cols.length - 1]];
+
+        const X_SEP = ' | ';
+        const labels = rows.map(r =>
+            xFields.map(f => String(r[f] ?? '')).join(X_SEP)
+        );
 
         return {
-            labels: rows.map(r => String(r[xField] ?? '')),
+            labels,
+            xFields,
             yFields,
-            xCol: xField,
             rows
         };
     }
@@ -366,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function buildChartOption(type, data) {
         if (!data || !data.rows || data.rows.length === 0) return { title: { text: 'ไม่มีข้อมูล', left: 'center', top: 'center', textStyle: { fontSize: 12 } } };
 
-        const { labels, yFields, xCol, rows } = aggregateWidgetData(data);
+        const { labels, yFields, rows } = aggregateWidgetData(data);
 
         if (type === 'pie') {
             const firstY = yFields[0] || (data.columns ? data.columns[data.columns.length - 1] : '');
@@ -376,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 series: [{
                     type: 'pie',
                     radius: ['30%', '65%'],
-                    data: rows.map(r => ({ name: String(r[xCol] ?? ''), value: parseFloat(r[firstY]) || 0 })),
+                    data: rows.map((r, idx) => ({ name: labels[idx], value: parseFloat(r[firstY]) || 0 })),
                     label: { show: false }
                 }]
             };
