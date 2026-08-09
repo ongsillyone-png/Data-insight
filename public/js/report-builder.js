@@ -1,3 +1,14 @@
+// ── XSS Prevention helper ─────────────────────────────────────────────────
+function escapeHtml(val) {
+    if (val === null || val === undefined) return '';
+    return String(val)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     let editor;
     let chartInstance;
@@ -368,20 +379,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Table Renderer (aggregated) ────────────────────────────────────────
     function renderAggTable(xLabel, yLabel, labels, values) {
         document.getElementById('result-thead').innerHTML =
-            `<th>${xLabel}</th><th>${yLabel}</th>`;
+            `<th>${escapeHtml(xLabel)}</th><th>${escapeHtml(yLabel)}</th>`;
         document.getElementById('result-tbody').innerHTML =
             labels.map((l, i) =>
-                `<tr><td>${l}</td><td>${(typeof values[i] === 'number' ? values[i].toLocaleString() : values[i])}</td></tr>`
+                `<tr><td>${escapeHtml(l)}</td><td>${(typeof values[i] === 'number' ? values[i].toLocaleString() : escapeHtml(values[i]))}</td></tr>`
             ).join('');
     }
 
     // ── Raw Table Renderer ─────────────────────────────────────────────────
     function renderRawTable(columns, rows) {
         document.getElementById('result-thead').innerHTML =
-            columns.map(c => `<th>${c}</th>`).join('');
+            columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
         document.getElementById('result-tbody').innerHTML =
             rows.map(row =>
-                `<tr>${columns.map(c => `<td>${row[c] ?? ''}</td>`).join('')}</tr>`
+                `<tr>${columns.map(c => `<td>${escapeHtml(row[c])}</td>`).join('')}</tr>`
             ).join('');
     }
 

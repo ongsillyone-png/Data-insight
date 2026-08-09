@@ -1,3 +1,14 @@
+// ── XSS Prevention helper ─────────────────────────────────────────────────
+function escapeHtml(val) {
+    if (val === null || val === undefined) return '';
+    return String(val)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // ── Bootstrap from server-injected JSON ────────────────────────────────
     const meta       = window.REPORT_META;
@@ -445,16 +456,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderMultiYTable(xFields, yFields, rows) {
         const xArr = Array.isArray(xFields) ? xFields : [xFields];
         // X column headers get a light-blue class to visually distinguish dimensions
-        const xThs = xArr.map(x => `<th class="table-primary" style="white-space:nowrap">${x}</th>`).join('');
-        const yThs = yFields.map(y => `<th>${y}</th>`).join('');
+        const xThs = xArr.map(x => `<th class="table-primary" style="white-space:nowrap">${escapeHtml(x)}</th>`).join('');
+        const yThs = yFields.map(y => `<th>${escapeHtml(y)}</th>`).join('');
         const ths  = xThs + yThs;
 
         const trs = rows.map(r => {
             // Render each X dimension as its own cell
-            const xTds = xArr.map(x => `<td class="fw-medium">${r[x] ?? ''}</td>`).join('');
+            const xTds = xArr.map(x => `<td class="fw-medium">${escapeHtml(r[x])}</td>`).join('');
             const yTds = yFields.map(y => {
                 const v = r[y];
-                return `<td>${typeof v === 'number' ? v.toLocaleString() : (v ?? '')}</td>`;
+                return `<td>${typeof v === 'number' ? v.toLocaleString() : escapeHtml(v)}</td>`;
             }).join('');
             return `<tr>${xTds}${yTds}</tr>`;
         }).join('');

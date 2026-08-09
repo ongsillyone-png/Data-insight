@@ -13,7 +13,14 @@ module.exports = {
             return res.status(400).json({ error: 'Only SELECT statements are allowed' });
         }
 
-        // 2. Prevent malicious keywords
+        // 2. Block stacked queries / multi-statements (semicolons in body)
+        const trimmedSql = sql_query.trim();
+        const bodyWithoutEndSemicolon = trimmedSql.replace(/;\s*$/, '');
+        if (bodyWithoutEndSemicolon.includes(';')) {
+            return res.status(400).json({ error: 'Multiple SQL statements (;) are forbidden for security reasons' });
+        }
+
+        // 3. Prevent malicious keywords
         // We use a regex to match exact words (bounded by word boundaries \b)
         const forbiddenKeywords = ['insert', 'update', 'delete', 'drop', 'alter', 'truncate', 'replace', 'grant', 'revoke', 'commit', 'rollback'];
         

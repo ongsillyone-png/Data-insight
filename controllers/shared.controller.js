@@ -97,6 +97,23 @@ class SharedController {
 
             const detectedParams = SqlParamService.parseParameters(report.sql_query);
 
+            // PDPA Masking for public shared reports (Mask 13-digit National CID values)
+            const maskedRows = (result.rows || []).map(row => {
+                const newRow = { ...row };
+                for (const col of (result.columns || [])) {
+                    const colName = col.toLowerCase();
+                    if (colName === 'cid' || colName === 'idcard' || colName === 'id_card' || colName === 'citizen_id') {
+                        if (newRow[col]) {
+                            const val = String(newRow[col]).trim();
+                            if (val.length === 13) {
+                                newRow[col] = val.slice(0, 5) + 'XXXXX' + val.slice(10);
+                            }
+                        }
+                    }
+                }
+                return newRow;
+            });
+
             res.json({
                 report_id: report.id,
                 name: report.name,
@@ -104,7 +121,7 @@ class SharedController {
                 chart_config: report.chart_config,
                 visual_config: report.visual_config,
                 columns: result.columns,
-                rows: result.rows,
+                rows: maskedRows,
                 detectedParams
             });
 

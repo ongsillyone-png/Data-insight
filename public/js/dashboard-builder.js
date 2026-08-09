@@ -1,3 +1,14 @@
+// ── XSS Prevention helper ─────────────────────────────────────────────────
+function escapeHtml(val) {
+    if (val === null || val === undefined) return '';
+    return String(val)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Data structures
     const charts = {};             // Keyed by uniqueWidgetId
@@ -308,9 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const xArr = Array.isArray(xFields) ? xFields : [xFields];
             const tableCols = [...xArr, ...yFields];
 
-            const ths = tableCols.map(c => `<th style="position:sticky; top:0; background:#343a40; color:#fff; font-size:11px; padding:4px 8px; z-index: 1;">${c}</th>`).join('');
+            const ths = tableCols.map(c => `<th style="position:sticky; top:0; background:#343a40; color:#fff; font-size:11px; padding:4px 8px; z-index: 1;">${escapeHtml(c)}</th>`).join('');
             const trs = rows.map(r =>
-                `<tr>${tableCols.map(c => `<td style="font-size:11px; padding:4px 8px;">${typeof r[c] === 'number' ? r[c].toLocaleString() : (r[c] ?? '')}</td>`).join('')}</tr>`
+                `<tr>${tableCols.map(c => `<td style="font-size:11px; padding:4px 8px;">${typeof r[c] === 'number' ? r[c].toLocaleString() : escapeHtml(r[c])}</td>`).join('')}</tr>`
             ).join('');
 
             container.innerHTML = `

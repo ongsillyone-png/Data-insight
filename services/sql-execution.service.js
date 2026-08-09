@@ -2,20 +2,13 @@ const hisPool = require('../config/his-database');
 const pool = require('../config/database'); // System DB for audit log
 
 class SqlExecutionService {
-    static async executePreview(sql, userId, limit = 1000) {
-        // Simple trick: wrap user query in a subquery to enforce limit safely
-        // Wait, MySQL 8 supports CTE or subquery. Let's just append LIMIT if not exists, 
-        // or execute directly. To be safe, let's just execute and if it's too big, it might cause issues,
-        // but for a preview, we can append limit if we don't find it.
-        
+    static async executePreview(sql, userId, limit = null) {
         let finalSql = sql.trim();
-        // Remove trailing semicolon
-        if (finalSql.endsWith(';')) {
-            finalSql = finalSql.slice(0, -1);
-        }
+        // Remove trailing semicolons cleanly
+        finalSql = finalSql.replace(/;\s*$/, '');
 
-        // Add limit for safety if not explicitly stated
-        if (!finalSql.toLowerCase().includes('limit')) {
+        // Only append limit if explicitly passed as a positive number
+        if (limit && typeof limit === 'number' && limit > 0 && !/\blimit\s+\d+/i.test(finalSql)) {
             finalSql += ` LIMIT ${limit}`;
         }
 
