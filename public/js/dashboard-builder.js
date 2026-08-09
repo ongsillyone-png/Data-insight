@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="hbar" ${currentChartType === 'hbar' ? 'selected' : ''}>H-Bar (แนวนอน)</option>
                         <option value="line" ${currentChartType === 'line' ? 'selected' : ''}>Line</option>
                         <option value="pie" ${currentChartType === 'pie' ? 'selected' : ''}>Pie</option>
+                        <option value="kpi" ${currentChartType === 'kpi' ? 'selected' : ''}>KPI Card</option>
                         <option value="table" ${currentChartType === 'table' ? 'selected' : ''}>Table</option>
                     </select>
                     <button type="button" class="btn btn-sm text-danger p-0 border-0 btn-remove-widget ms-1" style="line-height: 1; font-size: 16px; cursor: pointer;" title="ลบวิดเจ็ต">
@@ -291,7 +292,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById(`chart-${uniqueWidgetId}`);
         if (!container) return;
 
-        if (chartType === 'table') {
+        if (chartType === 'kpi') {
+            if (charts[uniqueWidgetId]) {
+                charts[uniqueWidgetId].dispose();
+                delete charts[uniqueWidgetId];
+            }
+            renderKpiCard(container, data);
+        } else if (chartType === 'table') {
             if (charts[uniqueWidgetId]) {
                 charts[uniqueWidgetId].dispose();
                 delete charts[uniqueWidgetId];
@@ -374,6 +381,51 @@ document.addEventListener('DOMContentLoaded', () => {
             yFields,
             rows
         };
+    }
+
+    function renderKpiCard(container, data) {
+        if (!data || !data.rows || data.rows.length === 0) {
+            container.innerHTML = `<div class="d-flex align-items-center justify-content-center h-100 text-muted small"><i class="bi bi-inbox me-1"></i>ไม่มีข้อมูล</div>`;
+            return;
+        }
+
+        const { yFields, rows } = aggregateWidgetData(data);
+        
+        let primaryMetricName = yFields && yFields.length > 0 ? yFields[0] : 'จำนวนรวม (Total)';
+        let mainValue = 0;
+        
+        if (yFields && yFields.length > 0 && rows.some(r => typeof r[yFields[0]] === 'number' || !isNaN(parseFloat(r[yFields[0]])))) {
+            const field = yFields[0];
+            mainValue = rows.reduce((sum, r) => sum + (parseFloat(r[field]) || 0), 0);
+        } else {
+            mainValue = rows.length;
+            primaryMetricName = 'จำนวนแถวข้อมูลทั้งหมด (Total Records)';
+        }
+
+        const formattedVal = Number.isInteger(mainValue) ? mainValue.toLocaleString() : mainValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const rowCount = rows.length.toLocaleString();
+
+        container.innerHTML = `
+            <div class="d-flex flex-column justify-content-between h-100 p-3 rounded-3 text-white shadow-sm" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); min-height: 100px;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="text-white-50 small fw-bold text-uppercase text-truncate me-2" style="letter-spacing: 0.5px; font-size: 11px;">
+                        ${primaryMetricName}
+                    </div>
+                    <div class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 30px; height: 30px;">
+                        <i class="bi bi-hash fs-6"></i>
+                    </div>
+                </div>
+                <div class="my-auto py-1">
+                    <div class="fw-bolder lh-1 text-truncate" style="font-size: clamp(1.5rem, 3.5vw, 2.3rem); text-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+                        ${formattedVal}
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between text-white-50" style="font-size: 10px;">
+                    <span><i class="bi bi-layers me-1"></i>${rowCount} รายการ</span>
+                    <span class="badge bg-white bg-opacity-25 text-white fw-normal px-2 py-0.5" style="font-size: 9.5px;">KPI Summary</span>
+                </div>
+            </div>
+        `;
     }
 
     // 9. ECharts Option Builder

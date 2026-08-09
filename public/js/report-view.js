@@ -477,6 +477,44 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (type === 'kpi') {
+            if (chartInst) { chartInst.dispose(); chartInst = null; }
+            let primaryMetricName = yFields && yFields.length > 0 ? yFields[0] : 'จำนวนรวม (Total)';
+            let mainValue = 0;
+            if (yFields && yFields.length > 0 && rows.some(r => typeof r[yFields[0]] === 'number' || !isNaN(parseFloat(r[yFields[0]])))) {
+                const field = yFields[0];
+                mainValue = rows.reduce((sum, r) => sum + (parseFloat(r[field]) || 0), 0);
+            } else {
+                mainValue = rows.length;
+                primaryMetricName = 'จำนวนแถวข้อมูลทั้งหมด (Total Records)';
+            }
+            const formattedVal = Number.isInteger(mainValue) ? mainValue.toLocaleString() : mainValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const rowCount = rows.length.toLocaleString();
+
+            container.innerHTML = `
+                <div class="d-flex flex-column justify-content-between h-100 p-4 rounded-3 text-white shadow-sm" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); min-height: 320px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="text-white-50 small fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 14px;">
+                            ${primaryMetricName}
+                        </div>
+                        <div class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-hash fs-3"></i>
+                        </div>
+                    </div>
+                    <div class="my-auto py-4">
+                        <div class="fw-bolder lh-1" style="font-size: clamp(2.5rem, 6vw, 4.5rem); text-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+                            ${formattedVal}
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-white-50 border-top border-white border-opacity-25 pt-3" style="font-size: 13px;">
+                        <span><i class="bi bi-layers me-1"></i>ประมวลผลจาก ${rowCount} รายการ</span>
+                        <span class="badge bg-white bg-opacity-25 text-white fw-normal px-3 py-1" style="font-size: 12px;">KPI Card View</span>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
         // labels array already has multi-X values concatenated (built in renderCurrentView)
         if (type === 'pie') {
             const firstY = yFields[0] || (currentData?.columns ? currentData.columns[currentData.columns.length - 1] : '');

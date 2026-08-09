@@ -271,6 +271,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return isNaN(n) ? 0 : Math.round(n * 100) / 100;
         });
 
+        if (type === 'kpi') {
+            const sumVal = values.reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+            const displayVal = Number.isInteger(sumVal) ? sumVal.toLocaleString() : sumVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            container.innerHTML = `
+                <div class="d-flex flex-column justify-content-between h-100 p-4 rounded-3 text-white shadow-sm" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); min-height: 220px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="text-white-50 small fw-bold text-uppercase" style="letter-spacing: 0.5px;">${yLabel || 'Total Summary'}</div>
+                        <div class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="bi bi-hash fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="my-auto py-3">
+                        <div class="fw-bolder lh-1" style="font-size: 3.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.15);">${displayVal}</div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-white-50 small border-top border-white border-opacity-25 pt-2">
+                        <span><i class="bi bi-layers me-1"></i>${labels.length.toLocaleString()} รายการข้อมูล</span>
+                        <span class="badge bg-white bg-opacity-25 text-white fw-normal px-2 py-1">KPI Card Preview</span>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
         if (type === 'pie') {
             chartInstance.setOption({
                 tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },

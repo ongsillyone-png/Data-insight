@@ -86,6 +86,7 @@
                             <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="hbar"><i class="bi bi-bar-chart-steps"></i> H-Bar</button>
                             <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="line"><i class="bi bi-graph-up"></i> Line</button>
                             <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="pie"><i class="bi bi-pie-chart-fill"></i> Pie</button>
+                            <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="kpi"><i class="bi bi-hash"></i> KPI Card</button>
                             <button class="btn btn-sm btn-outline-primary chart-type-btn" data-type="table"><i class="bi bi-table"></i> Table</button>
                         </div>
                         <div class="ms-auto d-flex gap-3 flex-wrap" id="stats-bar" style="font-size:13px;color:#666;">
@@ -132,6 +133,7 @@
                                     <option value="hbar"  <%= report.chart_type==='hbar' ?'selected':'' %>>Horizontal Bar (แนวนอน)</option>
                                     <option value="pie"   <%= report.chart_type==='pie'  ?'selected':'' %>>Pie Chart</option>
                                     <option value="line"  <%= report.chart_type==='line' ?'selected':'' %>>Line Chart</option>
+                                    <option value="kpi"   <%= report.chart_type==='kpi'  ?'selected':'' %>>KPI Card (ตัวเลขสรุป)</option>
                                 </select>
                                 <button class="btn btn-sm btn-outline-primary" id="btn-run-sql"><i class="bi bi-play-fill"></i> ทดสอบ</button>
                                 <button class="btn btn-sm btn-success" id="btn-save-sql"><i class="bi bi-save"></i> บันทึก</button>
